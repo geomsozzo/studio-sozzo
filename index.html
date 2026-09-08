@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-1047";</script>
+<script>window.VERSIONE="v20260908-1056";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -227,7 +227,12 @@
   .brand{font-weight:700;font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;}
   .brand i{width:7px;height:7px;border-radius:50%;background:var(--accent);display:block;}
   .brand small{font-family:var(--m);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:400;border:1px solid var(--line-strong);padding:2px 6px;border-radius:999px;}
-  .views{display:flex;gap:2px;margin-left:auto;}
+  .views{display:flex;flex-wrap:wrap;gap:6px 4px;margin-left:0;width:100%;align-items:center;}
+  .views .brk{flex-basis:100%;height:0;margin:0;padding:0;order:3;}
+  .views button[data-view="home"]{order:1;}
+  .views button[data-view="can"]{order:2;}
+  .views button[data-view]:not([data-view="home"]):not([data-view="can"]){order:4;}
+  .views #newbtn{order:5;}
 .views button{font-size:13.5px;padding:6px 13px;border-radius:999px;color:var(--muted);}
   .homebtn{background:var(--surface);border:1px solid var(--line-strong);color:var(--ink-soft)!important;font-weight:700;margin-right:8px;}
   .homebtn:hover{border-color:var(--accent);color:var(--accent)!important;}
@@ -239,6 +244,7 @@
   .views button[data-view="home"][aria-selected="true"],.views button[data-view="can"][aria-selected="true"]{
     background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
   .views button[data-view="can"]{margin-right:8px;}
+  .views button[data-view]:not([data-view="home"]):not([data-view="can"]){margin-top:2px;}
   .q{flex:1;min-width:190px;max-width:340px;}
   .q input{width:100%;font:inherit;font-size:13.5px;padding:7px 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);}
   .q input::placeholder{color:var(--muted);}
@@ -848,6 +854,7 @@
     <div class="q"><input id="q" type="search" placeholder="Cerca cliente, comune, dettaglio"></div>
     <div class="views" role="tablist">
       <button role="tab" data-view="home" aria-selected="true" title="Torna alla schermata principale e azzera ricerca e filtri">Scrivania</button>
+      <span class="brk"></span>
       <button role="tab" data-view="prat" aria-selected="false">Pratiche</button>
       <button role="tab" data-view="cli" aria-selected="false">Clienti</button>
       <button role="tab" data-view="can" aria-selected="false">Cantieri</button>
@@ -3462,6 +3469,7 @@ setView('home'); render();
   /* due porte grandi, Scrivania e Cantieri, il resto sotto Altro */
   .views{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 0;}
   .views button{display:none;}
+  .views .brk{display:none;}
   .views button[data-view="home"],.views button[data-view="can"],#altrobtn{display:block;}
   .views button[data-view="home"],.views button[data-view="can"]{
     font-size:16.5px;font-weight:700;letter-spacing:-.01em;padding:15px 10px;border-radius:13px;
