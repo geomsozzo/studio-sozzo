@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-1131";</script>
+<script>window.VERSIONE="v20260908-1418";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -3261,6 +3261,9 @@ setView('home'); render();
 #view-can .cpiano{border:1px solid var(--cline);border-radius:8px;overflow:hidden;background:var(--cpaper);}
 #view-can .pview{position:relative;overflow:hidden;background:var(--cpaper);width:100%;aspect-ratio:800/560;
   touch-action:none;user-select:none;cursor:crosshair;}
+/* pianta non ingrandita: il dito che scorre in su e in giu' muove la pagina,
+   il tocco singolo mette il pin, due dita ingrandiscono */
+#view-can .pview.scorri{touch-action:pan-y;}
 #view-can .pcv{position:absolute;inset:0;transform-origin:0 0;will-change:transform;}
 #view-can .pcv svg,#view-can .pcv .pimg{position:absolute;inset:0;width:100%;height:100%;display:block;}
 #view-can .pcv .pimg{object-fit:contain;background:#fff;}
@@ -3269,7 +3272,10 @@ setView('home'); render();
   display:grid;place-items:center;font-size:18px;color:#12202a;}
 #view-can .zb .lvl{align-self:center;background:rgba(255,255,255,.95);border-radius:9px;padding:0 9px;height:36px;display:grid;
   place-items:center;font-size:12px;color:#5b6f7c;box-shadow:0 2px 8px rgba(16,26,32,.2);font-family:var(--cmono);}
-#view-can .ctap{padding:10px 13px;background:#1668DC;color:#fff;font-size:12.5px;font-weight:600;}
+#view-can .ctap{padding:10px 13px;background:#1668DC;color:#fff;font-size:12.5px;font-weight:600;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#view-can .ctapb{margin-left:auto;background:rgba(255,255,255,.95);color:#12202a;border-radius:999px;
+  padding:6px 12px;font-size:12.5px;font-weight:700;}
 
 #view-can .pin{position:absolute;transform:translate(-50%,-50%) scale(calc(1 / var(--k,1)));width:25px;height:25px;border-radius:50%;
   display:grid;place-items:center;font-family:var(--cmono);font-size:11px;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
@@ -4094,8 +4100,10 @@ function vistaPianta(c){
       return '<button class="ctavb'+(t.id===p.id?" on":"")+'" onclick="CA.usaTavola(\''+t.id+'\')">'+
         esc(t.nome||"Tavola")+' <b>'+q+'</b></button>'; }).join("")+'</div>' : '';
   const piano = p ? '<div class="cpiano">'+scelta+
-      (S.pos?'<div class="ctap">Tocca il punto dove sta la lavorazione '+c.lav.find(x=>x.id===S.pos).n+'</div>':
-       '<div class="ctap">Tocca la pianta per aggiungere un pin. Pizzica per ingrandire.</div>')+
+      (S.pos?'<div class="ctap" id="ca-tap">Tocca il punto dove sta la lavorazione '+c.lav.find(x=>x.id===S.pos).n+'</div>':
+       '<div class="ctap" id="ca-tap">'+(tel()
+         ?'Tocca la pianta per attivarla. Con il dito la pagina scende.'
+         :'Tocca la pianta per aggiungere un pin. Pizzica per ingrandire.')+'</div>')+
       vista(livello(p)+pins(acc,spe),p.ar||800/560)+
       '<div class="cleg">'+legenda([...new Set(acc.map(l=>l.cat))])+'<span>'+TRIL+'urgente</span>'+
       '<span><i class="fade"></i>da iniziare</span><span><i class="nuovo"></i>nuovo</span></div></div>'
@@ -5470,7 +5478,23 @@ function applica(){ const cv=el("ca-cv"),vw=el("ca-pv"); if(!cv||!vw) return;
   const w=vw.clientWidth,h=vw.clientHeight;
   Z.k=Math.min(8,Math.max(1,Z.k)); Z.x=Math.min(0,Math.max(-(Z.k-1)*w,Z.x)); Z.y=Math.min(0,Math.max(-(Z.k-1)*h,Z.y));
   cv.style.transform="translate("+Z.x+"px,"+Z.y+"px) scale("+Z.k+")"; cv.style.setProperty("--k",Z.k);
-  const l=el("ca-lvl"); if(l) l.textContent=Math.round(Z.k*100)+"%"; }
+  const l=el("ca-lvl"); if(l) l.textContent=Math.round(Z.k*100)+"%";
+  /* finche' la pianta non e' stata attivata con un tocco, il dito fa scendere la pagina */
+  try{ vw.classList.toggle("scorri", tel() && !ATTIVA && !S.full && !S.dis); }catch(e){} }
+/* la pianta sul telefono parte bloccata: un tocco la attiva, il tasto la blocca */
+var ATTIVA=false;
+function pianoAttivo(v){
+  ATTIVA=!!v;
+  const vw=el("ca-pv");
+  const b=el("ca-tap");
+  if(b && tel() && !S.full && !S.dis && !S.pos && S.sub==="pianta"){
+    b.innerHTML = ATTIVA
+      ? 'Pianta attiva. Pizzica per ingrandire, tocca per mettere un pin. <button class="ctapb" onclick="CA.bloccaPianta()">Blocca e scorri</button>'
+      : 'Tocca la pianta per attivarla. Con il dito la pagina scende.';
+  }
+  if(vw) applica();
+}
+function bloccaPianta(){ Z={k:1,x:0,y:0}; pianoAttivo(false); }
 function zoomVerso(k2,px,py){ const k1=Z.k; k2=Math.min(8,Math.max(1,k2));
   Z.x=px-(px-Z.x)*(k2/k1); Z.y=py-(py-Z.y)*(k2/k1); Z.k=k2; applica(); }
 function coord(cx,cy){ const vw=el("ca-pv"),r=vw.getBoundingClientRect();
@@ -5487,7 +5511,9 @@ function tocca(cx,cy){
   formPin(p.x,p.y);
 }
 function attacca(){
-  const vw=el("ca-pv"); if(!vw) return; Z={k:1,x:0,y:0}; applica();
+  const vw=el("ca-pv"); if(!vw) return; Z={k:1,x:0,y:0};
+  ATTIVA = !tel() || !!S.full || !!S.dis || !!S.pos;
+  pianoAttivo(ATTIVA);
   const pts=new Map(); let st=null,mosso=false,tl=0,dis=false;
   const pc=function(cx,cy){ const r=vw.getBoundingClientRect();
     return {x:+(((cx-r.left-Z.x)/Z.k)/r.width*100).toFixed(2), y:+(((cy-r.top-Z.y)/Z.k)/r.height*100).toFixed(2)}; };
@@ -5505,7 +5531,10 @@ function attacca(){
     if(S.dis&&S.sub==="foto"&&S.foto){ const p=pc(e.clientX,e.clientY); S.foto.tr.push({c:S.col,w:0.7,p:[[p.x,p.y]]}); dis=true; aggiornaTratti(); e.preventDefault(); return; }
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===1){ st={x:e.clientX,y:e.clientY,ox:Z.x,oy:Z.y,t:Date.now()}; mosso=false; }
-    if(pts.size===2){ st={d:dist(),k:Z.k,m:mid()}; mosso=true; } });
+    if(pts.size===2){ st={d:dist(),k:Z.k,m:mid()}; mosso=true;
+      /* due dita: da qui comanda la pianta, non lo scorrimento della pagina */
+      if(!ATTIVA) pianoAttivo(true);
+      try{ vw.classList.remove("scorri"); }catch(e){} } });
   const snap=function(p,q,r){
     const dx=(p.x-q[0])/100*r.width, dy=(p.y-q[1])/100*r.height;
     if(Math.abs(dx)<Math.abs(dy)*0.18) return {x:q[0], y:p.y};
@@ -5531,12 +5560,21 @@ function attacca(){
     if(dis){ dis=false; salva(); return; }
     pts.delete(e.pointerId); if(pts.size>0){ st=null; return; }
     const tap=st&&!mosso&&Date.now()-st.t<450;
+    /* primo tocco sul telefono: attiva la pianta, non mette il pin */
+    if(tap && tel() && !ATTIVA && !S.full && !S.dis){
+      st=null; mosso=false; pianoAttivo(true);
+      toast("Pianta attiva. Ora pizzica per ingrandire.");
+      return;
+    }
     if(tap){ const ora=Date.now();
       if(ora-tl<300){ tl=0; const r=vw.getBoundingClientRect(); zoomVerso(Z.k>1.5?1:2.6,e.clientX-r.left,e.clientY-r.top); }
       else { tl=ora; setTimeout(()=>{ if(tl!==ora) return; if(e.target.closest(".pin")) return; tocca(e.clientX,e.clientY); },300); } }
-    st=null; mosso=false; });
-  vw.addEventListener("pointercancel",e=>{ pts.delete(e.pointerId); st=null; });
-  vw.addEventListener("wheel",e=>{ e.preventDefault(); const r=vw.getBoundingClientRect();
+    st=null; mosso=false; applica(); });
+  vw.addEventListener("pointercancel",e=>{ pts.delete(e.pointerId); st=null; mosso=false; if(!pts.size) applica(); });
+  /* rotella: ingrandisce solo tenendo premuto Ctrl, altrimenti la pagina scorre */
+  vw.addEventListener("wheel",e=>{
+    if(!e.ctrlKey && !e.metaKey && !S.full) return;
+    e.preventDefault(); const r=vw.getBoundingClientRect();
     zoomVerso(Z.k*(e.deltaY<0?1.15:1/1.15),e.clientX-r.left,e.clientY-r.top); },{passive:false});
 }
 
@@ -6036,7 +6074,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,ruota:ruota,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
  carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
