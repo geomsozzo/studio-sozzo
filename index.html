@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-1418";</script>
+<script>window.VERSIONE="v20260908-1430";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -5466,7 +5466,9 @@ function copiaFoto(id){
 }
 
 /* ---- zoom pubblico ---- */
-function zoom(d){ const vw=el("ca-pv"); if(vw) zoomVerso(Z.k*(d>0?1.6:1/1.6),vw.clientWidth/2,vw.clientHeight/2); }
+function zoom(d){ const vw=el("ca-pv"); if(!vw) return;
+  if(!ATTIVA && tel()) pianoAttivo(true);
+  zoomVerso(Z.k*(d>0?1.6:1/1.6),vw.clientWidth/2,vw.clientHeight/2); }
 function vista(dentro,ar){
   const r=ar||800/560;
   return '<div class="pview" id="ca-pv" style="aspect-ratio:'+r+';max-width:calc(var(--hpian,60vh) * '+r+');margin:0 auto">'+
@@ -5559,6 +5561,9 @@ function attacca(){
   vw.addEventListener("pointerup",e=>{
     if(dis){ dis=false; salva(); return; }
     pts.delete(e.pointerId); if(pts.size>0){ st=null; return; }
+    /* i tasti dello zoom e i pin non contano come tocco sulla pianta */
+    const suiTasti = !!(e.target && e.target.closest && (e.target.closest(".zb") || e.target.closest("button")));
+    if(suiTasti){ st=null; mosso=false; return; }
     const tap=st&&!mosso&&Date.now()-st.t<450;
     /* primo tocco sul telefono: attiva la pianta, non mette il pin */
     if(tap && tel() && !ATTIVA && !S.full && !S.dis){
