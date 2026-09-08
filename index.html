@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-1009";</script>
+<script>window.VERSIONE="v20260908-1047";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -232,6 +232,13 @@
   .homebtn{background:var(--surface);border:1px solid var(--line-strong);color:var(--ink-soft)!important;font-weight:700;margin-right:8px;}
   .homebtn:hover{border-color:var(--accent);color:var(--accent)!important;}
   .views button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);font-weight:600;}
+  /* le due porte principali si vedono anche da spente: contornate, e piene quando le apri */
+  .views button[data-view="home"],.views button[data-view="can"]{
+    border:1.5px solid var(--line-strong);color:var(--ink-soft);font-weight:600;padding:6px 18px;}
+  .views button[data-view="home"]:hover,.views button[data-view="can"]:hover{border-color:var(--accent);color:var(--accent);}
+  .views button[data-view="home"][aria-selected="true"],.views button[data-view="can"][aria-selected="true"]{
+    background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+  .views button[data-view="can"]{margin-right:8px;}
   .q{flex:1;min-width:190px;max-width:340px;}
   .q input{width:100%;font:inherit;font-size:13.5px;padding:7px 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);}
   .q input::placeholder{color:var(--muted);}
@@ -843,7 +850,6 @@
       <button role="tab" data-view="home" aria-selected="true" title="Torna alla schermata principale e azzera ricerca e filtri">Scrivania</button>
       <button role="tab" data-view="prat" aria-selected="false">Pratiche</button>
       <button role="tab" data-view="cli" aria-selected="false">Clienti</button>
-      <button role="tab" data-view="imm" aria-selected="false">Immobili</button>
       <button role="tab" data-view="can" aria-selected="false">Cantieri</button>
       <button role="tab" data-view="mail" aria-selected="false">Email</button>
       <button role="tab" data-view="rub" aria-selected="false">Rubrica</button>
@@ -1162,8 +1168,10 @@ function copiaLibera(v){ try{ return JSON.parse(JSON.stringify(v)); }catch(e){ r
    schermo l'app continua a vedere la foto come prima. */
 var FOTO={}, FOTOCHIESTE={}, FOTOSCRITTE={};
 function chiaveFoto(can, lid, i){
-  return 'foto/'+String(can+'--'+lid+'--'+(i==null?'p':i)).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
+  return 'foto/'+String(can+'--'+lid+'--'+(i==null?'p':i)+'--'+
+    Math.random().toString(36).slice(2,8)).replace(/[^A-Za-z0-9_\-.~:@+]/g,'_');
 }
+function chiaveBuona(k){ return typeof k==='string' && k.indexOf('foto/')===0; }
 function fotoDaCasa(k){
   if(FOTO[k]) return FOTO[k];
   try{ var v=localStorage.getItem('fo-'+k); if(v){ FOTO[k]=v; return v; } }catch(e){}
@@ -1182,14 +1190,18 @@ function smontaFoto(cant){
     if(Array.isArray(c.lav)) c2.lav=c.lav.map(function(l){
       var l2={}, j; for(j in l) l2[j]=l[j];
       if(typeof l.fsrc==='string' && l.fsrc.indexOf('data:')===0){
-        var k1=chiaveFoto(can,l.id,null);
+        /* la chiave nasce una volta e resta attaccata alla foto, cosi'
+           se cambi l'ordine o sostituisci lo scatto non si mescolano */
+        var k1 = chiaveBuona(l.fk) ? l.fk : chiaveFoto(can,l.id,null);
+        l.fk = k1; l2.fk = k1;
         fotoInCasa(k1,l.fsrc); fuori.push([k1,l.fsrc]); l2.fsrc='@'+k1;
       }
       if(Array.isArray(l.gal)) l2.gal=l.gal.map(function(g,i){
         if(g && typeof g.src==='string' && g.src.indexOf('data:')===0){
-          var k2=chiaveFoto(can,l.id,i);
+          var k2 = chiaveBuona(g.k) ? g.k : chiaveFoto(can,l.id,i);
+          g.k = k2;
           fotoInCasa(k2,g.src); fuori.push([k2,g.src]);
-          var g2={}, q; for(q in g) g2[q]=g[q]; g2.src='@'+k2; return g2;
+          var g2={}, q; for(q in g) g2[q]=g[q]; g2.k=k2; g2.src='@'+k2; return g2;
         }
         return g;
       });
@@ -1251,8 +1263,10 @@ function scrivi(doc, val){
   if(doc==='stato/cantieri'){
     const sm=smontaFoto(val);
     sm.fuori.forEach(function(par){
-      if(FOTOSCRITTE[par[0]]) return; FOTOSCRITTE[par[0]]=1;
-      DB.doc(par[0]).set({v:par[1]}).catch(function(){ delete FOTOSCRITTE[par[0]]; });
+      var k=par[0], src=par[1];
+      if(FOTOSCRITTE[k]===src.length) return;   /* gia' scritta, identica */
+      FOTOSCRITTE[k]=src.length;
+      DB.doc(k).set({v:src}).catch(function(){ delete FOTOSCRITTE[k]; });
     });
     DB.doc(doc).set({v:sm.dati}).catch(()=>{});
     return;
@@ -3876,6 +3890,15 @@ function urgCliente(nome){
     return c._prio!=null?{v:c._prio, why:c._why||"", mod:!!c._mod}:null;
   }catch(e){ return null; }
 }
+function avviato(id){
+  try{
+    const c=(window.CANT||{})[id]; if(!c) return false;
+    if(["lav","ev","piante","amb","tav","punti","prod","ditte","doc"].some(function(k){
+      return Array.isArray(c[k]) && c[k].length; })) return true;
+    if(Array.isArray(c.ck) && c.ck.some(function(r){ return r && r.e; })) return true;
+    return false;
+  }catch(e){ return false; }
+}
 function listaCantieri(){
   let cs=cantieri();
   try{ ricalcolaUrgenze(); }catch(e){}
@@ -3883,9 +3906,13 @@ function listaCantieri(){
   cs=cs.slice().sort(function(a,b){
     const ua=urgCliente(a.cliente), ub=urgCliente(b.cliente);
     return ((ua?ua.v:9)-(ub?ub.v:9)) || String(a.immobile||a.cliente).localeCompare(String(b.immobile||b.cliente)); });
-  if(!cs.length) return '<div class="cvuoto">Nessuna pratica con categoria CAN.<br>Metti la categoria Cantiere a una pratica e comparira qui.</div>';
+  const vivi=cs.filter(function(p){ return avviato(p.id); });
+  const dormienti=cs.filter(function(p){ return !avviato(p.id); });
+  const mostro = (S.tuttiCan || !vivi.length) ? cs : vivi;
+  if(!cs.length) return '<div class="cvuoto">Nessun cantiere.<br>Apri il cantiere dalla scheda di un cliente e comparira qui.</div>';
+  cs = mostro;
   return (S.filtro?'<div class="ctop"><button class="cback" onclick="CA.tuttiCantieri()">&lsaquo; Tutti i cantieri</button><div><h3>'+esc(S.filtro)+'</h3><div class="csub">i cantieri di questo cliente</div></div></div>':"")+
-   '<div class="csec" style="margin-top:14px">Cantieri<span class="n">'+cs.length+(S.filtro?"":" pratiche con categoria CAN")+'</span></div>'+
+   '<div class="csec" style="margin-top:14px">Cantieri<span class="n">'+cs.length+(S.filtro?"":(S.tuttiCan?" in tutto":" aperti"))+'</span></div>'+
    '<div class="clista">'+cs.map(p=>{
      const c=(window.CANT&&window.CANT[p.id])||{lav:[],ck:[]}; if(!Array.isArray(c.lav)) c.lav=[];
      const ap=c.lav.filter(l=>l.stato!=="verificata").length,
@@ -3901,7 +3928,11 @@ function listaCantieri(){
        '<span class="cb">'+(c.lav.length?'<span class="ctag">'+ap+' aperte su '+c.lav.length+'</span>':'<span class="ctag">da impostare</span>')+
        (bl?'<span class="ctag red">'+bl+' bloccant'+(bl===1?"e":"i")+'</span>':"")+
        (dv?'<span class="ctag acc">'+dv+' da verificare</span>':"")+'</span></button>';}).join("")+'</div>'+
-   '<p class="chint">I cantieri sono le pratiche con categoria CAN. Il nome, il cliente e la cartella arrivano dalla pratica: qui dentro ci metti pianta, lavorazioni, cantierizzazione e diario.</p>';
+   ((!S.filtro && dormienti.length && vivi.length) ?
+     '<button class="cbtn" style="margin-top:12px" onclick="CA.altriCantieri()">'+
+     (S.tuttiCan ? 'Mostra solo i cantieri aperti'
+                 : 'Ne hai altri '+dormienti.length+' da avviare, mostrali') + '</button>' : '')+
+   '<p class="chint">Qui compaiono i cantieri che hai gia\' avviato, cioe\' quelli dove hai messo una pianta, una lavorazione, una ditta o una nota. Gli altri restano da parte finche\' non li apri.</p>';
 }
 function riga(l){
   const c=stato(S.can);
@@ -3923,7 +3954,7 @@ function pulsantiCat(c, usate, perPin){
         (S.fatte || l.stato!=="verificata"); }).length;
   };
   return '<div class="cchips">'+
-    '<button class="cchip'+(S.cat.length?"":" on")+'" onclick="CA.cat(null)">'+
+    '<button class="cchip'+((!S.cat.length && (!tel()||S.tutteLav))?" on":"")+'" onclick="CA.cat(null)">'+
       (perPin?"Tutti i pin":"Tutte")+' <b>'+conta(null)+'</b></button>'+
     usate.map(function(k){
       const on=S.cat.indexOf(k)>=0;
@@ -4062,7 +4093,11 @@ function vistaPianta(c){
       (dec.length?'<div class="csec">Aspettano una tua decisione<span class="n">'+dec.length+'</span></div><div class="clist">'+dec.map(riga).join("")+'</div>':"")+
       '<div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'+
       pulsantiCat(c, usate, false)+
-      (att.length?elencoPerCategoria(att, riga):'<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
+      (att.length
+        ? (vedoLav()
+            ? elencoPerCategoria(att, riga)
+            : '<p class="chint">Tocca una categoria qui sopra per vedere le sue lavorazioni, oppure Tutte.</p>')
+        : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
       '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
       (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
         (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):""));
@@ -4417,8 +4452,15 @@ function mest(id){
   if(!id){ S.mest=[]; } else { togli(S.mest,id); S.cat=S.cat.filter(function(k){ return inMest({cat:k}); }); }
   S.sel=null; render();
 }
-function cat(k){ if(!k) S.cat=[]; else togli(S.cat,k); S.sel=null; render(); }
-function azzeraFiltri(){ S.mest=[]; S.cat=[]; S.sel=null; render(); }
+/* sul telefono le lavorazioni si vedono solo quando scegli una categoria,
+   altrimenti la pagina diventa un muro di testo */
+function vedoLav(){ return !tel() || S.cat.length>0 || S.mest.length>0 || !!S.tutteLav; }
+function cat(k){
+  if(!k){ S.cat=[]; S.tutteLav=!S.tutteLav; }
+  else { togli(S.cat,k); S.tutteLav=false; }
+  S.sel=null; render();
+}
+function azzeraFiltri(){ S.mest=[]; S.cat=[]; S.tutteLav=false; S.sel=null; render(); }
 function catDia(k){ S.catDia=(S.catDia===k)?null:k; render(); }
 function cercaDia(v){
   S.qDia=v; render();
@@ -5960,7 +6002,8 @@ function noteFoto2(l){
     '<span class="m"><span class="t">'+esc(m.txt||"senza testo")+'</span></span>'+quando(m.q)+'</div>'; }).join("")+'</div>';
 }
 
-return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:function(){S.filtro=null;S.can=null;render();},tab:tab,sel:sel,chiudi:chiudi,mest:mest,cat:cat,azzeraFiltri:azzeraFiltri,catDia:catDia,
+return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:function(){S.filtro=null;S.can=null;render();},
+ altriCantieri:function(){ S.tuttiCan=!S.tuttiCan; render(); },tab:tab,sel:sel,chiudi:chiudi,mest:mest,cat:cat,azzeraFiltri:azzeraFiltri,catDia:catDia,
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
