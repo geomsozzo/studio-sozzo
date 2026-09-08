@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-1107";</script>
+<script>window.VERSIONE="v20260908-1131";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -354,6 +354,8 @@
     .top{flex:none;}
     #view-home,#view-prat,#view-cli,#view-imm,#view-mail,#view-rub,#view-ord,#view-age,#view-new{flex:1;min-height:0;}
     #view-prat,#view-cli,#view-imm,#view-mail,#view-rub,#view-ord,#view-age,#view-new{overflow-y:auto;padding-bottom:40px;}
+    /* la scheda del cantiere scorre tutta insieme quando c'e' l'elenco a tutta larghezza */
+    #view-can.scorre{flex:1;min-height:0;overflow-y:auto;padding-bottom:40px;}
     #view-home{display:flex;flex-direction:column;}
     #view-home[hidden]{display:none;}
     .work{flex:1;min-height:0;height:100%;margin-top:14px;padding-bottom:14px;align-items:stretch;}
@@ -3220,6 +3222,10 @@ setView('home'); render();
 
 #view-can .clist{border:1px solid var(--cline);border-radius:8px;overflow:hidden;background:var(--cs);}
 #view-can .cli{display:flex;align-items:center;gap:12px;width:100%;padding:11px 13px;border-bottom:1px solid var(--cline);text-align:left;background:transparent;}
+#view-can .cli .cnota{display:block;font-size:12.5px;line-height:1.4;color:var(--cdim);margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+#view-can .clavgiu{margin-top:18px;}
+#view-can .clavgiu .cli .m{flex:1;min-width:0;}
 #view-can .cli:last-child{border-bottom:none;}
 #view-can .cli:hover{background:var(--cs2);}
 #view-can .cli .m{flex:1;min-width:0;}
@@ -3860,7 +3866,10 @@ function render(){
 let RIS=null;
 try{ window.addEventListener("resize", function(){ clearTimeout(RIS); RIS=setTimeout(function(){ if(S.can) render(); else adattaColonne(); }, 220); }); }catch(e){}
 function adattaColonne(){
+  const vc=document.getElementById("view-can");
+  const giu=vc?vc.querySelector(".clavgiu"):null;
   const cols=document.querySelectorAll("#view-can .c2>.ccol");
+  if(vc) vc.classList.toggle("scorre", !!giu && window.innerWidth>=1041);
   if(!cols.length) return;
   const largo=window.innerWidth>=1041;
   for(let i=0;i<cols.length;i++){
@@ -3868,6 +3877,13 @@ function adattaColonne(){
     if(!largo){ c.style.maxHeight=""; c.style.overflowY=""; c.style.removeProperty("--hpian"); continue; }
     const top=c.getBoundingClientRect().top;
     const h=Math.max(340, Math.round(window.innerHeight-top-14));
+    if(giu){
+      /* la pagina scorre tutta insieme: le colonne restano alte quanto serve,
+         ma la pianta continua a stare dentro una schermata */
+      c.style.maxHeight=""; c.style.overflowY="";
+      c.style.setProperty("--hpian", Math.max(220, h-150)+"px");
+      continue;
+    }
     c.style.maxHeight=h+"px";
     c.style.overflowY="auto";
     c.style.setProperty("--hpian", Math.max(220, h-150)+"px");
@@ -3951,7 +3967,8 @@ function riga(l){
    '<span style="color:'+ST[l.stato].c+'">'+ST[l.stato].l+'</span>'+
    (l.loc?' &middot; '+esc(l.loc):"")+(l.imp?' &middot; '+esc(l.imp):"")+
    (l.pin?"":' &middot; <span class="ctag amb">senza posizione</span>')+
-   (l.urg!=="normale"?' <span class="ctag red">'+UR[l.urg].toLowerCase()+'</span>':"")+'</span></span>'+
+   (l.urg!=="normale"?' <span class="ctag red">'+UR[l.urg].toLowerCase()+'</span>':"")+'</span>'+
+   (l.nota?'<span class="cnota">'+esc(String(l.nota).replace(/\s+/g," ").slice(0,220))+'</span>':"")+'</span>'+
    '<span class="r">'+quando(l.agg||l.creato)+'<span style="min-width:36px;text-align:right">'+(l.pct||0)+'%</span><span class="cchev">&rsaquo;</span></span></button>';
 }
 function pulsantiCat(c, usate, perPin){
@@ -4088,6 +4105,14 @@ function vistaPianta(c){
       '<label class="cupl pri">Carica un PDF o una foto<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>'+
       '<button class="cbtn" onclick="CA.esempio()">Usa la pianta di esempio</button></div>';
 
+  const elencoLav =
+      (att.length
+        ? (vedoLav()
+            ? elencoPerCategoria(att, riga)
+            : '<p class="chint">Scegli una categoria qui sopra per vederne le lavorazioni. Puoi sceglierne piu\' di una, oppure premere Tutte.</p>')
+        : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
+      (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
+        (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):"");
   const destra=(S.sel?scheda(S.sel):
       (S.mest.length?S.mest.map(function(id){
         const ds=ditteDi(c,id), m=MEST.find(function(x){ return x.id===id; });
@@ -4099,16 +4124,11 @@ function vistaPianta(c){
         :(mest?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+
           '<div class="clist">'+mest+'</div>':""))+
       (dec.length?'<div class="csec">Aspettano una tua decisione<span class="n">'+dec.length+'</span></div><div class="clist">'+dec.map(riga).join("")+'</div>':"")+
-      '<div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'+
+      (tel()?'<div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'
+            :'<div class="csec">Categorie</div>')+
       pulsantiCat(c, usate, false)+
-      (att.length
-        ? (vedoLav()
-            ? elencoPerCategoria(att, riga)
-            : '<p class="chint">Scegli una categoria qui sopra per vederne le lavorazioni. Puoi sceglierne piu\' di una, oppure premere Tutte.</p>')
-        : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
       '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
-      (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
-        (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):""));
+      (tel()?elencoLav:""));
   if(tel()){
     if(S.sel) return '<div class="ctelback"><button class="cbtn" onclick="CA.chiudi()">&lsaquo; Torna alla pianta</button></div>'+scheda(S.sel);
     return piano+
@@ -4129,7 +4149,8 @@ function vistaPianta(c){
       '<button class="cbtn pri" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.report()">Stampa report</button>'+
      '</div>':"")+
     '</div><div class="ccol">'+destra+
-    '</div></div>';
+    '</div></div>'+
+    '<div class="clavgiu"><div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'+elencoLav+'</div>';
 }
 function scheda(id){
   const c=stato(S.can), l=c.lav.find(x=>x.id===id); if(!l) return "";
