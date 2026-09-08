@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260907-1855";</script>
+<script>window.VERSIONE="v20260908-0631";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -54,14 +54,33 @@
     fs.enablePersistence({synchronizeTabs:true}).catch(function(){ });
   }catch(e){}
 
-  /* ---------- l'archivio, con la stessa forma di prima ---------- */
+  /* ---------- l'archivio, con la stessa forma di prima ----------
+     Il contenuto viaggia come un unico testo, campo "j". Firestore non
+     ammette liste dentro liste e altre finezze che nei nostri dati ci sono,
+     e come testo il problema non si pone. I documenti scritti alla vecchia
+     maniera continuano a leggersi. */
+  function impacchetta(o){ return { j: JSON.stringify(o) }; }
+  function spacchetta(sn){
+    var d = (sn && sn.exists) ? sn.data() : null;
+    var v = null;
+    if(d){
+      if(typeof d.j === 'string'){ try{ v = JSON.parse(d.j); }catch(e){ v = null; } }
+      else v = d;
+    }
+    return { exists: !!v, data: function(){ return v; }, metadata: sn && sn.metadata };
+  }
   var db = {
     doc: function(id){
       var r = fs.doc(id);
       return {
-        set: function(o){ return r.set(o); },
-        get: function(){ return r.get(); },
-        onSnapshot: function(cb, err){ return r.onSnapshot({includeMetadataChanges:false}, cb, err||function(){}); }
+        set: function(o){
+          try{ return r.set(impacchetta(o)); }
+          catch(e){ return Promise.reject(e); }
+        },
+        get: function(){ return r.get().then(spacchetta); },
+        onSnapshot: function(cb, err){
+          return r.onSnapshot(function(sn){ cb(spacchetta(sn)); }, err||function(){});
+        }
       };
     }
   };
@@ -6060,6 +6079,9 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
   pronto(function(){
     if(String(location.hash||"").indexOf("prova")>=0) window.apriProva();
   });
+  window.addEventListener("hashchange", function(){
+    if(String(location.hash||"").indexOf("prova")>=0 && !document.getElementById("cprova")) window.apriProva();
+  });
 })();
 </script>
 
@@ -6103,6 +6125,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
           var nome=voci[i++], val=mappa[nome];
           m.textContent=fatte.join("\n")+"\nsto scrivendo "+nome+"...";
           var scritture=[];
+          try{
           if(nome==="stato/cantieri" && val && val.v){
             var sm=smontaFoto(val.v);
             sm.fuori.forEach(function(par){ scritture.push(window.DB.doc(par[0]).set({v:par[1]})); });
@@ -6112,6 +6135,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
             scritture.push(window.DB.doc(nome).set(val));
             fatte.push(nome);
           }
+          }catch(er){ errori++; fatte.push(nome+" ERRORE: "+((er&&er.message)||er)); m.textContent=fatte.join("\n"); setTimeout(una, 60); return; }
           Promise.all(scritture).then(function(){ setTimeout(una, 60); })
             .catch(function(e){ errori++; fatte.push(nome+" ERRORE: "+((e&&e.message)||e)); setTimeout(una, 60); });
         }
@@ -6120,9 +6144,9 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
       r.readAsText(f,"UTF-8");
     };
   };
-  pronto(function(){
-    if(String(location.hash||"").indexOf("importa")>=0) window.apriImporta();
-  });
+  function guarda(){ if(String(location.hash||"").indexOf("importa")>=0) window.apriImporta(); }
+  pronto(guarda);
+  window.addEventListener("hashchange", guarda);
 })();
 </script>
 <script>
