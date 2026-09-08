@@ -1,12 +1,13 @@
 /* Studio Sozzo, guardiano della pagina.
    Tiene una copia dell'app sul telefono, cosi' si apre anche senza campo. */
-const NOME = 'sozzo-20260908-1430';
+const NOME = 'sozzo-20260908-1439';
 const ROBA = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icona-192.png',
-  './icona-512.png'
+  './icona-512.png',
+  './icona-maskable-512.png'
 ];
 
 self.addEventListener('install', e => {
