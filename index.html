@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-0631";</script>
+<script>window.VERSIONE="v20260908-1009";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -802,6 +802,7 @@
   .savedot{font-family:var(--m);font-size:11.5px;letter-spacing:.1em;color:var(--muted);margin-left:8px;}
 
   .newbtn{font-size:13.5px;padding:6px 14px;border-radius:999px;background:var(--accent);color:#fff!important;font-weight:600;margin-left:6px;}
+  #altrobtn{display:none;}
   .views .newbtn[aria-selected="true"],.views .newbtn{color:#fff!important;}
   @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .newbtn{background:#17607F;}}
   :root[data-theme="dark"] .newbtn{background:#17607F;}
@@ -849,6 +850,7 @@
       <button role="tab" data-view="ord" aria-selected="false">Ordini</button>
       <button role="tab" data-view="age" aria-selected="false">Agenda</button>
       <button id="newbtn" class="newbtn">+ Nuovo contatto</button>
+      <button id="altrobtn" type="button">Altro</button>
     </div>
   </div>
 
@@ -3055,6 +3057,21 @@ document.querySelectorAll('.views button[data-view]').forEach(b=>b.onclick=()=>{
   if(b.dataset.view==='home'){ vaiHome(); return; }
   setView(b.dataset.view); render();});
 document.getElementById('newbtn').onclick=()=>{setView('new');render();};
+(function(){
+  const alt=document.getElementById('altrobtn'), fila=document.querySelector('.views');
+  if(!alt||!fila) return;
+  alt.onclick=function(e){
+    e.stopPropagation();
+    const aperta=fila.classList.toggle('aperta');
+    alt.textContent = aperta ? 'Meno' : 'Altro';
+  };
+  fila.querySelectorAll('button[data-view]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if(b.dataset.view!=='home' && b.dataset.view!=='can') return;
+      fila.classList.remove('aperta'); alt.textContent='Altro';
+    });
+  });
+})();
 function vaiHome(){
   state.postaTutte=0;
   state.q=''; const qi=document.getElementById('q'); if(qi) qi.value='';
@@ -3428,6 +3445,23 @@ setView('home'); render();
 #view-can .cgal u{position:absolute;left:3px;bottom:3px;text-decoration:none;background:rgba(12,22,32,.72);color:#fff;
   min-width:17px;height:17px;border-radius:999px;font-size:10.5px;display:grid;place-items:center;padding:0 4px;}
 @media(max-width:760px){
+  /* due porte grandi, Scrivania e Cantieri, il resto sotto Altro */
+  .views{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 0;}
+  .views button{display:none;}
+  .views button[data-view="home"],.views button[data-view="can"],#altrobtn{display:block;}
+  .views button[data-view="home"],.views button[data-view="can"]{
+    font-size:16.5px;font-weight:700;letter-spacing:-.01em;padding:15px 10px;border-radius:13px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);text-align:center;}
+  .views button[data-view="home"][aria-selected="true"],
+  .views button[data-view="can"][aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
+  #altrobtn{grid-column:1 / -1;font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);
+    background:transparent;border:0;padding:9px 0 2px;text-align:center;}
+  .views.aperta button{display:block;}
+  .views.aperta{grid-template-columns:1fr 1fr;}
+  .views.aperta button:not([data-view="home"]):not([data-view="can"]):not(#altrobtn){
+    font-size:14.5px;font-weight:600;padding:12px 8px;border-radius:11px;
+    background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line);text-align:center;}
+  .views.aperta #newbtn{grid-column:1 / -1;}
   body[data-vista="can"] .app{padding:0 11px 96px;}
   body[data-vista="can"] .top{padding:9px 0 8px;gap:8px;}
   body[data-vista="can"] .brand small,body[data-vista="can"] .savedot,body[data-vista="can"] #bkbtn{display:none;}
@@ -5944,7 +5978,12 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
 /* riapre l'app dove l'avevi lasciata dopo un aggiornamento della pagina */
 (function(){
   var r=window.UIPOS;
-  if(!r||!r.v||!document.getElementById('view-'+r.v)||r.v==='home') return;
+  var telefono = window.innerWidth<=760;
+  if(!r||!r.v||!document.getElementById('view-'+r.v)||r.v==='home'){
+    /* dal telefono, se non c'e' niente da riprendere, si parte dai cantieri */
+    if(telefono){ try{ setView('can'); render(); }catch(e){} }
+    return;
+  }
   if(r.v==='can'){ try{ CA.ripristina(r); }catch(e){} }
   try{ setView(r.v); render(); }catch(e){}
 })();
