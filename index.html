@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260908-1056";</script>
+<script>window.VERSIONE="v20260908-1107";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -3962,7 +3962,7 @@ function pulsantiCat(c, usate, perPin){
         (S.fatte || l.stato!=="verificata"); }).length;
   };
   return '<div class="cchips">'+
-    '<button class="cchip'+((!S.cat.length && (!tel()||S.tutteLav))?" on":"")+'" onclick="CA.cat(null)">'+
+    '<button class="cchip'+((!S.cat.length && S.tutteLav)?" on":"")+'" onclick="CA.cat(null)">'+
       (perPin?"Tutti i pin":"Tutte")+' <b>'+conta(null)+'</b></button>'+
     usate.map(function(k){
       const on=S.cat.indexOf(k)>=0;
@@ -4104,7 +4104,7 @@ function vistaPianta(c){
       (att.length
         ? (vedoLav()
             ? elencoPerCategoria(att, riga)
-            : '<p class="chint">Tocca una categoria qui sopra per vedere le sue lavorazioni, oppure Tutte.</p>')
+            : '<p class="chint">Scegli una categoria qui sopra per vederne le lavorazioni. Puoi sceglierne piu\' di una, oppure premere Tutte.</p>')
         : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
       '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
       (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
@@ -4462,7 +4462,7 @@ function mest(id){
 }
 /* sul telefono le lavorazioni si vedono solo quando scegli una categoria,
    altrimenti la pagina diventa un muro di testo */
-function vedoLav(){ return !tel() || S.cat.length>0 || S.mest.length>0 || !!S.tutteLav; }
+function vedoLav(){ return S.cat.length>0 || S.mest.length>0 || !!S.tutteLav; }
 function cat(k){
   if(!k){ S.cat=[]; S.tutteLav=!S.tutteLav; }
   else { togli(S.cat,k); S.tutteLav=false; }
