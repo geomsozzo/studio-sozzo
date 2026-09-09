@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1209";</script>
+<script>window.VERSIONE="v20260909-1225";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -5453,8 +5453,75 @@ function fotoDaFile(input, id, modo2){
     });
     return;
   }
-  leggiScatto(f, function(im, src){ nuovaDaFoto(im, src); });
+  /* nessuna lavorazione aperta: prima leggo le foto, poi chiedo dove vanno.
+     Cosi' non nascono piu' lavorazioni a sorpresa chiamate Foto di cantiere. */
+  leggiTutte(tutti, function(lista){ if(lista.length) dovePorto(lista); });
 }
+function leggiTutte(files, fatto){
+  const fuori=[]; let i=0;
+  (function giro(){
+    if(i>=files.length){ fatto(fuori); return; }
+    const f=files[i++]; let andata=false;
+    const salvagente=setTimeout(function(){ if(!andata){ andata=true; giro(); } }, 12000);
+    leggiScatto(f, function(im, src){
+      if(andata) return; andata=true; clearTimeout(salvagente);
+      fuori.push({src:src, ar:im.width/im.height});
+      giro();
+    });
+  })();
+}
+let FOTOATTESA=null;
+function dovePorto(lista){
+  const c=stato(S.can);
+  FOTOATTESA=lista;
+  const att=c.lav.filter(function(l){ return l.stato!=="verificata"; })
+    .sort(function(a,b){ return String(b.agg||"").localeCompare(String(a.agg||"")); }).slice(0,8);
+  modale(lista.length>1?(lista.length+" foto pronte"):"Foto pronta", "dimmi dove va",
+    (att.length
+      ? '<div class="clist">'+att.map(function(l){
+          return '<button class="cli" onclick="CA.fotoA('+l.id+')">'+
+            '<span class="cnum" style="background:'+CATS[l.cat].c+'">'+l.n+'</span>'+
+            '<span class="m"><span class="t">'+esc(l.tit)+'</span>'+
+            '<span class="s">'+esc(CATS[l.cat].b)+(l.loc?' &middot; '+esc(l.loc):"")+'</span></span>'+
+            '<span class="r"><span class="cchev">&rsaquo;</span></span></button>'; }).join("")+'</div>'
+      : '<p class="chint">In questo cantiere non ci sono ancora lavorazioni aperte.</p>')+
+    '<button class="cbtn pri" style="margin-top:10px" onclick="CA.fotoNuovaDa()">Nuova lavorazione da questa foto</button>'+
+    '<button class="cbtn" onclick="CA.fotoAnnulla()">Annulla</button>');
+}
+function attaccaFoto(l, lista){
+  lista.forEach(function(x){
+    if(!l.fsrc){ l.fsrc=x.src; l.far=x.ar; l.fm=[]; l.ftr=[]; }
+    else galleria(l).push({src:x.src, ar:x.ar, m:[], tr:[], q:oggi()});
+  });
+  l.agg=oggi();
+}
+function fotoA(id){
+  const c=stato(S.can), l=c.lav.find(function(x){ return x.id===id; });
+  const lista=FOTOATTESA||[]; FOTOATTESA=null;
+  if(!l||!lista.length){ chiudiModale(); return; }
+  attaccaFoto(l, lista);
+  nota("Allegate "+lista.length+" foto alla lavorazione "+l.n+".", l.id);
+  S.foto=null; S.dis=false; S.sub="pianta"; S.sel=id;
+  salva(); chiudiModale(); render();
+  toast(lista.length>1?(lista.length+" foto messe sulla "+l.n):("Foto messa sulla "+l.n));
+}
+function fotoNuovaDa(){
+  const lista=FOTOATTESA||[]; FOTOATTESA=null;
+  if(!lista.length){ chiudiModale(); return; }
+  const c=stato(S.can), p=piantaAttiva(), u=ultimaScelta();
+  const cat=(u&&CATS[u.cat])?u.cat:"all";
+  const l={id:c.next,n:c.next,tit:"Foto di cantiere",cat:cat,imp:(u&&u.imp)||"",loc:(u&&u.loc)||"",
+    urg:"normale",nota:"",stato:"dafare",pct:0,pin:null,piana:p?p.id:null,blocca:[],
+    nuovo:true,creato:oggi(),agg:oggi(),daNominare:true};
+  c.next++; c.lav.push(l);
+  attaccaFoto(l, lista);
+  nota("Creata la lavorazione "+l.n+" da "+lista.length+" foto di cantiere.", l.id);
+  S.foto=null; S.dis=false; S.sub="pianta"; S.sel=l.id;
+  salva(); chiudiModale(); render();
+  modifica(l.id);
+  toast("Dalle un nome, si salva da solo");
+}
+function fotoAnnulla(){ FOTOATTESA=null; chiudiModale(); toast("Foto scartata"); }
 /* mette in fila piu' foto sulla stessa lavorazione, senza aprirle una a una */
 function piuFoto(files, id){
   const c=stato(S.can), l=c.lav.find(function(x){ return x.id===id; });
@@ -6571,7 +6638,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
  carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
