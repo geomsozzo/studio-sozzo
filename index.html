@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1535";</script>
+<script>window.VERSIONE="v20260909-1603";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -3936,6 +3936,34 @@ setView('home'); render();
 #view-can .cpctb:hover{border-color:#1668DC;}
 #view-can .cpctb.on{background:#1668DC;border-color:#1668DC;color:#fff;}
 #view-can .ctav{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px 0;}
+/* la striscia sotto la pianta, come le linguette dei layout di AutoCAD */
+#view-can .ctabs{border-top:1px solid var(--cline2);background:var(--surface-2,#F2F5F8);}
+#view-can .ctabr{display:flex;align-items:stretch;gap:2px;overflow-x:auto;padding:0 6px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+#view-can .ctb{flex:none;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:1px solid var(--cline2);border-bottom:0;border-radius:7px 7px 0 0;margin-top:5px;
+  background:var(--surface-3,#E6EBF0);color:var(--cdim);padding:7px 12px;font-size:12.5px;font-weight:600;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+#view-can .ctb b{font-weight:600;color:var(--cfaint);font-size:11.5px;}
+#view-can .ctb.on{background:var(--cs);color:var(--ctext);border-color:var(--cline2);
+  box-shadow:inset 0 2px 0 #1668DC;margin-top:0;padding-top:9px;}
+#view-can .ctb.on b{color:#1668DC;}
+#view-can .ctb.ren,#view-can .ctb.piu{padding:7px 11px;font-size:14px;color:var(--cdim);max-width:none;}
+#view-can .ctb.piu{cursor:pointer;}
+#view-can .clivs{display:flex;gap:5px;flex-wrap:wrap;padding:7px 10px;border-top:1px solid var(--cline2);
+  background:var(--cs);}
+#view-can .clv{border:1px solid var(--cline2);background:var(--cs);color:var(--ctext);border-radius:999px;
+  padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+#view-can .clv b{font-weight:600;color:var(--cfaint);font-size:11px;}
+#view-can .clv.on{background:#1668DC;border-color:#1668DC;color:#fff;}
+#view-can .clv.on b{color:rgba(255,255,255,.8);}
+#view-can .clv.piu{color:var(--cdim);font-weight:500;}
+/* i blocchi per livello nell'elenco delle lavorazioni */
+#view-can .clivbl{margin:0 0 12px;}
+#view-can .clivh{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--cdim);margin:0 0 7px;}
+#view-can .clivh .n{background:var(--surface-3);color:inherit;border-radius:999px;padding:1px 8px;
+  font-size:11.5px;font-weight:600;letter-spacing:0;text-transform:none;}
 #view-can .ctavb{border:1px solid var(--cline2);background:var(--cs);color:var(--ctext);border-radius:999px;
   padding:6px 12px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;}
 #view-can .ctavb b{color:var(--cfaint);font-weight:600;margin-left:3px;}
@@ -4062,6 +4090,34 @@ setView('home'); render();
 #view-can .pin{position:absolute;transform:translate(-50%,-50%) scale(calc(1 / var(--k,1)));width:25px;height:25px;border-radius:50%;
   display:grid;place-items:center;font-family:var(--cmono);font-size:11px;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
 #view-can .pin.todo{opacity:.55;}
+/* il mirino: dove finisce il pin, si vede e si sposta col dito */
+#view-can .pmira{position:absolute;transform:translate(-50%,-50%) scale(calc(1 / var(--k,1)));
+  width:64px;height:64px;border-radius:50%;z-index:6;cursor:grab;touch-action:none;
+  display:grid;place-items:center;}
+#view-can .pmira::before{content:"";position:absolute;left:50%;top:50%;width:46px;height:46px;
+  transform:translate(-50%,-50%);border-radius:50%;border:2px dashed #E01B0F;
+  background:rgba(224,27,15,.10);animation:mirapuls 1.4s ease-in-out infinite;}
+#view-can .pmira::after{content:"";position:absolute;left:50%;top:50%;width:1px;height:1px;
+  box-shadow:0 0 0 1px #E01B0F, -13px 0 0 0 #E01B0F, 13px 0 0 0 #E01B0F, 0 -13px 0 0 #E01B0F, 0 13px 0 0 #E01B0F;}
+#view-can .pmira i{position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:50%;
+  transform:translate(-50%,-50%);background:#E01B0F;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+@keyframes mirapuls{0%,100%{opacity:1}50%{opacity:.45}}
+#view-can .pmirab{position:absolute;left:10px;right:10px;bottom:10px;z-index:8;display:flex;
+  align-items:center;gap:8px;flex-wrap:wrap;background:rgba(15,26,38,.92);color:#fff;
+  border-radius:12px;padding:9px 11px;box-shadow:0 4px 16px rgba(0,0,0,.28);}
+#view-can .pmirab span{flex:1;min-width:80px;font-size:12.5px;font-weight:600;}
+#view-can .pmirab button{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;
+  border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;}
+#view-can .pmirab button.ok{background:#1668DC;border-color:#1668DC;}
+#view-can .pview.mirando .zb{bottom:64px;}
+/* la lente: mostra ingrandito il pezzo di pianta sotto il dito */
+#view-can .plente{position:absolute;top:10px;left:10px;width:112px;height:112px;border-radius:50%;
+  border:3px solid #fff;box-shadow:0 3px 14px rgba(0,0,0,.35);z-index:7;pointer-events:none;
+  background-repeat:no-repeat;background-color:#fff;}
+#view-can .plente.destra{left:auto;right:10px;}
+#view-can .plente i{position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:50%;
+  transform:translate(-50%,-50%);background:#E01B0F;border:2px solid #fff;}
+
 #view-can .pin.nuovo{opacity:1;box-shadow:0 0 0 3px var(--ctext),0 1px 4px rgba(0,0,0,.3);}
 #view-can .pin.off{opacity:.25;filter:grayscale(1);pointer-events:none;}
 #view-can .pin .fl{position:absolute;right:-4px;bottom:-4px;width:13px;height:13px;border-radius:50%;font-size:8px;
@@ -4341,6 +4397,8 @@ setView('home'); render();
   #view-can .cchip{padding:9px 13px;font-size:13.5px;}
   #view-can .cpctb{padding:14px 0;font-size:15px;}
   #view-can .ctavb{padding:10px 15px;font-size:13.5px;}
+  #view-can .ctb{padding:9px 13px;font-size:13px;max-width:160px;}
+  #view-can .clv{padding:7px 12px;font-size:12.5px;}
   #view-can .pin{width:31px;height:31px;font-size:13px;border-width:2.5px;}
   #view-can .pin .fl{width:15px;height:15px;font-size:9px;}
   #view-can .cstrum{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
@@ -4527,11 +4585,20 @@ const CKB=[["Prima dell'apertura","Notifica preliminare trasmessa","ASL e Ispett
  ["Gestione","Occupazione di suolo pubblico","Se il ponteggio invade la strada",0],
  ["Gestione","Polizza CAR e responsabilita civile","Copia in cantiere, massimali",0]];
 
-let S={dis:false,col:"#E01B0F",filtro:null,can:null,sub:"pianta",sel:null,mest:[],cat:[],arch:false,fatte:false,pos:null,modSel:null,en:false,foto:null,
+let S={dis:false,col:"#E01B0F",filtro:null,can:null,sub:"pianta",sel:null,mest:[],cat:[],arch:false,fatte:false,pos:null,modSel:null,en:false,foto:null,liv:null,
   tende:{lav:true,mest:false}};
 const inMest=function(l){ return !S.mest.length || S.mest.indexOf(mestDi(l.cat))>=0; };
 const inCat=function(l){ return !S.cat.length || S.cat.indexOf(l.cat)>=0; };
-const filtrata=function(l){ return inCat(l) && inMest(l); };
+const filtrata=function(l){ return inCat(l) && inMest(l) && nelLiv(l); };
+/* I livelli sono le sottocategorie di una tavola, tipo piano primo e piano secondo.
+   Stanno dentro la tavola, cosi' ogni pianta ha i suoi. */
+function livDi(p){ return (p && Array.isArray(p.liv)) ? p.liv : []; }
+function livTrova(p,id){ return livDi(p).find(function(v){ return v.id===id; }) || null; }
+function nelLiv(l){
+  if(!S.liv) return true;
+  if(S.liv==="_senza") return !livTrova(piantaAttiva(), l.liv);
+  return String(l.liv||"")===String(S.liv);
+}
 function tinta(hex,a){
   const h=String(hex||"#5A6B7C").replace("#","");
   const n=parseInt(h.length===3?h.split("").map(function(x){return x+x;}).join(""):h,16);
@@ -4853,6 +4920,22 @@ function pulsantiCat(c, usate, perPin){
         '<i style="background:'+(on?"#fff":CATS[k].c)+'"></i>'+esc(CATS[k].b)+' <b>'+conta(k)+'</b></button>'; }).join("")+
     '</div>';
 }
+/* quando la tavola ha dei livelli e li stai guardando tutti,
+   l'elenco si divide per piano e dentro resta diviso per categoria come prima */
+function elencoPerLivello(lista, riga){
+  const p=piantaAttiva(), livs=livDi(p);
+  if(!livs.length || S.liv) return elencoPerCategoria(lista, riga);
+  const gruppi=[];
+  livs.forEach(function(v){
+    const ls=lista.filter(function(l){ return String(l.liv||"")===v.id; });
+    if(ls.length) gruppi.push({nome:v.nome, ls:ls}); });
+  const senza=lista.filter(function(l){ return !livTrova(p,l.liv); });
+  if(senza.length) gruppi.push({nome:"Senza livello", ls:senza});
+  if(gruppi.length<2) return elencoPerCategoria(lista, riga);
+  return gruppi.map(function(g){
+    return '<div class="clivbl"><div class="clivh">'+esc(g.nome)+'<span class="n">'+g.ls.length+'</span></div>'+
+      elencoPerCategoria(g.ls, riga)+'</div>'; }).join("");
+}
 function elencoPerCategoria(lista, riga){
   if(!lista.length) return '';
   if(S.cat.length===1) return '<div class="clist">'+lista.map(riga).join("")+'</div>';
@@ -4867,6 +4950,35 @@ function elencoPerCategoria(lista, riga){
       '<div class="clist">'+ls.map(riga).join("")+'</div></div>'; }).join("");
 }
 function suQuestaTavola(l,p){ return !!l.pin && (!p || !l.piana || l.piana===p.id); }
+/* La striscia in stile AutoCAD: una linguetta per ogni tavola, sotto la pianta,
+   e sotto ancora le sottocategorie della tavola, cioe' i livelli. */
+function barraTavole(c, p, lav){
+  const conta=function(t){ return lav.filter(function(l){
+    return l.pin && (l.piana? l.piana===t.id : t.id===c.piante[0].id); }).length; };
+  const ling=c.piante.map(function(t){
+    return '<button class="ctb'+(t.id===p.id?" on":"")+'" onclick="CA.usaTavola(\''+t.id+'\')" '+
+      'ondblclick="CA.tavRinomina(\''+t.id+'\')" title="'+esc(t.nome||"Tavola")+'">'+
+      esc(t.nome||"Tavola")+'<b>'+conta(t)+'</b></button>'; }).join("");
+  const coda=
+    '<button class="ctb ren" onclick="CA.tavRinomina(\''+p.id+'\')" title="Rinomina questa tavola">&#9998;</button>'+
+    '<label class="ctb piu" title="Carica un\'altra tavola">+'+
+      '<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>';
+  const livs=livDi(p);
+  const nl=function(v){ return lav.filter(function(l){
+    return l.pin && String(l.liv||"")===v.id && (l.piana? l.piana===p.id : p.id===c.piante[0].id); }).length; };
+  const senza=lav.filter(function(l){
+    return l.pin && !livTrova(p,l.liv) && (l.piana? l.piana===p.id : p.id===c.piante[0].id); }).length;
+  const barraLiv=
+    '<div class="clivs">'+
+      '<button class="clv'+(S.liv?"":" on")+'" onclick="CA.livScegli(null)">Tutta la tavola</button>'+
+      livs.map(function(v){
+        return '<button class="clv'+(S.liv===v.id?" on":"")+'" onclick="CA.livScegli(\''+v.id+'\')" '+
+          'ondblclick="CA.livRinomina(\''+v.id+'\')">'+esc(v.nome)+'<b>'+nl(v)+'</b></button>'; }).join("")+
+      (livs.length&&senza?'<button class="clv'+(S.liv==="_senza"?" on":"")+'" onclick="CA.livScegli(\'_senza\')">Senza livello<b>'+senza+'</b></button>':"")+
+      '<button class="clv piu" onclick="CA.livGestisci()" title="Aggiungi o sistema i livelli">+ livello</button>'+
+    '</div>';
+  return '<div class="ctabs"><div class="ctabr">'+ling+coda+'</div>'+barraLiv+'</div>';
+}
 function tel(){ return window.innerWidth<=760; }
 function barraTel(){
   if(!S.can||S.sub==="foto"||S.full) return '';
@@ -4951,7 +5063,8 @@ function vistaPianta(c){
   const p=piantaAttiva();
   /* le voci fantasma non compaiono e non si contano */
   const lav=c.lav.filter(function(l){ return !fantasma(l); });
-  const tutti=lav.filter(function(l){ return suQuestaTavola(l,p); });
+  /* il livello si comporta come un piano a se': i pin degli altri piani non si vedono */
+  const tutti=lav.filter(function(l){ return suQuestaTavola(l,p) && nelLiv(l); });
   const dentro=filtrata;
   let acc=tutti.filter(dentro), spe=tutti.filter(function(l){ return !dentro(l); });
   if(!S.fatte){ spe=spe.concat(acc.filter(l=>l.stato==="verificata")); acc=acc.filter(l=>l.stato!=="verificata"); }
@@ -4975,16 +5088,15 @@ function vistaPianta(c){
   lav.forEach(function(l){
     if(!inMest(l)) return;
     if(usate.indexOf(l.cat)<0) usate.push(l.cat); });
-  const scelta = (p && c.piante.length>1) ? '<div class="ctav">'+c.piante.map(function(t){
-      const q=lav.filter(function(l){ return l.pin && (l.piana? l.piana===t.id : t.id===c.piante[0].id); }).length;
-      return '<button class="ctavb'+(t.id===p.id?" on":"")+'" onclick="CA.usaTavola(\''+t.id+'\')">'+
-        esc(t.nome||"Tavola")+' <b>'+q+'</b></button>'; }).join("")+'</div>' : '';
-  const piano = p ? '<div class="cpiano">'+scelta+
+  const scelta = "";
+  const strisciaTav = p ? barraTavole(c, p, lav) : "";
+  const piano = p ? '<div class="cpiano">'+
       (S.pos?'<div class="ctap" id="ca-tap">Tocca il punto dove sta la lavorazione '+c.lav.find(x=>x.id===S.pos).n+'</div>':
        '<div class="ctap" id="ca-tap">'+(tel()
          ?'Tocca la pianta per attivarla. Con il dito la pagina scende.'
          :'Tocca la pianta per aggiungere un pin. Pizzica per ingrandire.')+'</div>')+
       vista(livello(p)+pins(acc,spe),p.ar||800/560)+
+      strisciaTav+
       '<div class="cleg">'+legendaMest(acc.map(l=>l.cat))+'</div></div>'
     : '<div class="cpiano" style="padding:26px 18px;text-align:center">'+
       '<p style="margin:0 0 4px;font-weight:600">Nessuna tavola caricata</p>'+
@@ -4995,7 +5107,7 @@ function vistaPianta(c){
   const elencoLav =
       (att.length
         ? (vedoLav()
-            ? elencoPerCategoria(att, riga)
+            ? elencoPerLivello(att, riga)
             : '<p class="chint">Scegli una categoria qui sopra per vederne le lavorazioni. Puoi sceglierne piu\' di una, oppure premere Tutte.</p>')
         : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
       (sist.length?'<div class="csec">Foto da sistemare<span class="n">'+sist.length+'</span></div>'+
@@ -5045,8 +5157,8 @@ function vistaPianta(c){
   }
   return '<div class="c2"><div class="ccol">'+piano+
     (p?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+
-      '<label class="cupl" style="width:auto;margin:0;padding:8px 13px;font-size:13px">Carica un\'altra tavola<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>'+
       '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
+      '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.livGestisci()">Livelli</button>'+
       '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi completate":"Mostra completate")+'</button>'+
       '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.esportaPianta()">Esporta la pianta</button>'+
      '</div>':"")+
@@ -5586,6 +5698,7 @@ function formPin(x,y){
    selMest(mid)+
    bloccoCat(mid, cat)+
    campoAmbiente(loc)+
+   campoLivello(null)+
    '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+
      ['normale','urgente','bloccante'].map(function(k){
        return '<option value="'+k+'"'+(urg===k?' selected':'')+'>'+esc(UR[k]||k)+'</option>'; }).join("")+'</select></div>'+
@@ -5600,7 +5713,7 @@ function creaPin(x,y){
   const gi=el("ca-i");
   const l={id:c.next,n:c.next,tit:(el("ca-t").value||"").trim()||"Nuova lavorazione",cat:el("ca-c").value,
     imp:gi?String(gi.value||"").trim():"",loc:assicuraAmbiente(c,(el("ca-l").value||"").trim()),urg:el("ca-u").value,
-    nota:(el("ca-n").value||"").trim(),stato:"dafare",pct:0,pin:{x:x,y:y},piana:p?p.id:null,blocca:[],nuovo:true,creato:oggi(),agg:oggi()};
+    nota:(el("ca-n").value||"").trim(),stato:"dafare",pct:0,pin:{x:x,y:y},piana:p?p.id:null,liv:livDalModulo(),blocca:[],nuovo:true,creato:oggi(),agg:oggi()};
   c.next++; c.lav.push(l); nota("Creata la lavorazione "+l.n+", "+l.tit+".",l.id);
   ricordaScelta(l);
   salva(); chiudiModale(); render(); toast("Pin "+l.n+" creato");
@@ -5866,6 +5979,7 @@ function modifica(id){
    selMest(mid)+
    bloccoCat(mid, l.cat)+
    campoAmbiente(l.loc||"")+
+   campoLivello(l.liv||"")+
    '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+Object.keys(UR).map(k=>'<option value="'+k+'" '+(k===l.urg?"selected":"")+'>'+UR[k]+'</option>').join("")+'</select></div>'+
    '<div class="cfield"><label>Nota</label><textarea id="ca-n">'+esc(l.nota||"")+'</textarea></div>'+
    bloccoImpresa(l.cat, l.imp||null)+
@@ -5894,15 +6008,16 @@ function prendiCampi(id){
   const c=stato(S.can), l=c.lav.find(function(x){ return x.id===id; });
   if(!l) return false;
   const g=function(k){ const e=el(k); return e?String(e.value||""):null; };
-  const t=g("ca-t"), cat=g("ca-c"), loc=g("ca-l"), urg=g("ca-u"), nt=g("ca-n"), imp=g("ca-i");
-  const prima=JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp]);
+  const t=g("ca-t"), cat=g("ca-c"), loc=g("ca-l"), urg=g("ca-u"), nt=g("ca-n"), imp=g("ca-i"), lv=g("ca-v");
+  const prima=JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp,l.liv||""]);
   if(t!=null && t.trim()) l.tit=t.trim();
   if(cat!=null && CATS[cat]) l.cat=cat;
   if(loc!=null) l.loc=assicuraAmbiente(c, loc.trim());
   if(urg!=null) l.urg=urg;
   if(nt!=null) l.nota=nt.trim();
   if(imp!=null) l.imp=imp.trim();
-  if(JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp])===prima) return false;
+  if(lv!=null) l.liv=lv||null;
+  if(JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp,l.liv||""])===prima) return false;
   l.agg=oggi(); salva();
   return true;
 }
@@ -6018,7 +6133,85 @@ function tavElimina(id){
   if(c.piante.length) tavole(); else chiudiModale();
   toast("Tavola rimossa");
 }
-function usaTavola(id){ const c=stato(S.can); c.pa=id; salva(); chiudiModale(); render(); }
+function usaTavola(id){ const c=stato(S.can); c.pa=id; S.liv=null; salva(); chiudiModale(); render(); }
+/* ---- livelli, le sottocategorie di una tavola ---- */
+function livScegli(id){ S.liv=(S.liv===id)?null:(id||null); render(); }
+function livGestisci(){
+  const c=stato(S.can), p=piantaAttiva(); if(!p){ toast("Carica prima una tavola"); return; }
+  const livs=livDi(p);
+  const senza=c.lav.filter(function(l){ return !fantasma(l) && suQuestaTavola(l,p) && !livTrova(p,l.liv); }).length;
+  modale("Livelli di "+(p.nome||"questa tavola"), "le sottocategorie della tavola, tipo piano primo e piano secondo",
+   (livs.length?'<div class="clist">'+livs.map(function(v){
+      const q=c.lav.filter(function(l){ return !fantasma(l) && String(l.liv||"")===v.id; }).length;
+      return '<div class="cli" style="cursor:default"><span class="m"><span class="t">'+esc(v.nome)+'</span>'+
+        '<span class="s">'+q+' lavorazion'+(q===1?"e":"i")+'</span></span><span class="r" style="gap:6px">'+
+        '<button class="cbtn" style="width:auto;margin:0;padding:5px 10px;font-size:12.5px" onclick="CA.livRinomina(\''+v.id+'\')">Rinomina</button>'+
+        '<button class="cbtn" style="width:auto;margin:0;padding:5px 10px;font-size:12.5px;color:var(--ccrit);border-color:var(--ccrit)" onclick="CA.livTogli(\''+v.id+'\')">'+(S.lcanc===v.id?"Confermi?":"Rimuovi")+'</button>'+
+        '</span></div>'; }).join("")+'</div>'
+     :'<p class="chint">Nessun livello. Creane uno e le lavorazioni si dividono per piano, restando divise per categoria come adesso.</p>')+
+   '<div class="cfield"><label>Nuovo livello</label><input id="lv-n" placeholder="Es. Piano primo"></div>'+
+   '<div class="cchips">'+["Piano terra","Piano primo","Piano secondo","Seminterrato","Sottotetto","Esterno"]
+     .map(function(x){ return '<button class="cchip" onclick="CA.livProponi(\''+x+'\')">'+esc(x)+'</button>'; }).join("")+'</div>'+
+   (senza?'<label class="chint" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" id="lv-tutte" checked> metti dentro le '+senza+' lavorazioni di questa tavola che non hanno ancora un livello</label>':"")+
+   '<button class="cbtn pri" onclick="CA.livCrea()">Crea il livello</button>'+
+   '<button class="cbtn" onclick="CA.chiudiModale()">Chiudi</button>');
+}
+function livProponi(x){ const e=el("lv-n"); if(e){ e.value=x; e.focus(); } }
+function livCrea(){
+  const c=stato(S.can), p=piantaAttiva(); if(!p) return;
+  const n=(el("lv-n").value||"").trim(); if(!n){ toast("Serve il nome del livello"); return; }
+  if(!Array.isArray(p.liv)) p.liv=[];
+  if(p.liv.some(function(v){ return normn(v.nome)===normn(n); })){ toast("Questo livello c'e' gia'"); return; }
+  const v={id:"v"+Date.now().toString(36)+Math.random().toString(36).slice(2,5), nome:n};
+  p.liv.push(v);
+  const box=el("lv-tutte");
+  let quante=0;
+  if(box && box.checked){
+    c.lav.forEach(function(l){
+      if(!fantasma(l) && suQuestaTavola(l,p) && !livTrova(p,l.liv)){ l.liv=v.id; quante++; } });
+  }
+  nota("Creato il livello "+n+" sulla tavola "+(p.nome||"")+(quante?", con "+quante+" lavorazioni dentro":"")+".");
+  S.liv=v.id; salva(); chiudiModale(); render();
+  toast("Livello "+n+" creato");
+}
+function livRinomina(id){
+  const p=piantaAttiva(), v=livTrova(p,id); if(!v) return;
+  modale("Rinomina il livello", esc(v.nome),
+   '<div class="cfield"><label>Nome del livello</label><input id="lv-r" value="'+esc(v.nome)+'"></div>'+
+   '<button class="cbtn pri" onclick="CA.livNome(\''+id+'\')">Salva</button>'+
+   '<button class="cbtn" onclick="CA.livGestisci()">Annulla</button>');
+  setTimeout(function(){ const e=el("lv-r"); if(e){ e.focus(); e.select(); } }, 120);
+}
+function livNome(id){
+  const p=piantaAttiva(), v=livTrova(p,id); if(!v) return;
+  const n=(el("lv-r").value||"").trim(); if(!n){ toast("Serve un nome"); return; }
+  v.nome=n; nota("Rinominato un livello in "+n+"."); salva(); chiudiModale(); render(); toast("Rinominato");
+}
+function livTogli(id){
+  const c=stato(S.can), p=piantaAttiva(), v=livTrova(p,id); if(!v) return;
+  if(S.lcanc!==id){ S.lcanc=id; livGestisci(); toast("Premi di nuovo Rimuovi per confermare"); return; }
+  /* tolgo solo il livello, le lavorazioni restano dove sono */
+  p.liv=livDi(p).filter(function(x){ return x.id!==id; });
+  c.lav.forEach(function(l){ if(String(l.liv||"")===id) l.liv=null; });
+  S.lcanc=null; if(S.liv===id) S.liv=null;
+  nota("Tolto il livello "+v.nome+", le lavorazioni restano sulla tavola."); salva(); render(); livGestisci();
+  toast("Livello tolto");
+}
+/* il campo Livello nei moduli, compare solo se la tavola ne ha */
+function campoLivello(val){
+  const p=piantaAttiva(), livs=livDi(p);
+  if(!livs.length) return "";
+  const scelto=(val!=null&&val!=="")?String(val):((S.liv&&S.liv!=="_senza")?S.liv:"");
+  return '<div class="cfield"><label>Livello</label><select id="ca-v">'+
+    '<option value="">nessun livello</option>'+
+    livs.map(function(v){ return '<option value="'+v.id+'"'+(scelto===v.id?' selected':'')+'>'+esc(v.nome)+'</option>'; }).join("")+
+    '</select></div>';
+}
+function livDalModulo(){
+  const e=el("ca-v");
+  if(e) return e.value||null;
+  return (S.liv&&S.liv!=="_senza")?S.liv:null;
+}
 async function carica(input){
   const f=input.files&&input.files[0]; if(!f) return; chiudiModale();
   if(f.type.indexOf("image/")===0){ const fr=new FileReader();
@@ -6209,6 +6402,7 @@ function fotoMestiere(mid){
     '<div class="cfield"><label>Descrizione</label><input id="ca-t" placeholder="Es. scatola derivazione da spostare"></div>'+
     bloccoCat(mid, cat)+
     campoAmbiente(loc)+
+    campoLivello(null)+
     '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+
       ['normale','urgente','bloccante'].map(function(k){
         return '<option value="'+k+'">'+esc(UR[k]||k)+'</option>'; }).join("")+'</select></div>'+
@@ -6227,7 +6421,7 @@ function fotoCrea(){
   const cat=g("ca-c")||(MEST.find(function(x){ return x.id===mid; })||MEST[0]).c[0];
   const l={id:c.next,n:c.next,tit:g("ca-t")||"Foto di cantiere",cat:cat,
     imp:g("ca-i"),loc:assicuraAmbiente(c,g("ca-l")),urg:g("ca-u")||"normale",nota:g("ca-n"),
-    stato:"dafare",pct:0,pin:null,piana:p?p.id:null,blocca:[],nuovo:true,
+    stato:"dafare",pct:0,pin:null,piana:p?p.id:null,liv:livDalModulo(),blocca:[],nuovo:true,
     creato:oggi(),agg:oggi()};
   c.next++; c.lav.push(l);
   attaccaFoto(l, lista);
@@ -6818,6 +7012,64 @@ function zoomVerso(k2,px,py){ const k1=Z.k; k2=Math.min(8,Math.max(1,k2));
   Z.x=px-(px-Z.x)*(k2/k1); Z.y=py-(py-Z.y)*(k2/k1); Z.k=k2; applica(); }
 function coord(cx,cy){ const vw=el("ca-pv"),r=vw.getBoundingClientRect();
   return {x:Math.round(((cx-r.left-Z.x)/Z.k)/r.width*800),y:Math.round(((cy-r.top-Z.y)/Z.k)/r.height*560)}; }
+/* ---- il mirino ----
+   Sul telefono il dito copre il punto, quindi prima di aprire il modulo
+   metto un mirino dove hai toccato, lo puoi spostare, e sopra c'e' una lente
+   che mostra ingrandito il pezzo di pianta che sta sotto il dito. */
+let MIRA=null, TRASCMIRA=false;
+function usaMira(){ return tel() && S.sub==="pianta" && !S.dis; }
+function mettiMira(cx,cy){ MIRA=coord(cx,cy); disegnaMira(); }
+function togliMira(){ MIRA=null; disegnaMira(); }
+function disegnaMira(){
+  const cv=el("ca-cv"), vw=el("ca-pv"); if(!cv||!vw) return;
+  let m=el("ca-mira"), barra=el("ca-mirab"), L=el("ca-lente");
+  if(!MIRA){
+    if(m) m.remove(); if(barra) barra.remove(); if(L) L.remove();
+    try{ vw.classList.remove("mirando"); }catch(e){}
+    return;
+  }
+  if(!m){
+    m=document.createElement("div"); m.id="ca-mira"; m.className="pmira";
+    m.innerHTML='<i></i>'; cv.appendChild(m);
+  }
+  m.style.left=(MIRA.x/800*100)+"%"; m.style.top=(MIRA.y/560*100)+"%";
+  if(!barra){
+    barra=document.createElement("div"); barra.id="ca-mirab"; barra.className="pmirab";
+    vw.appendChild(barra);
+  }
+  barra.innerHTML='<span>'+(S.pos?"Qui la lavorazione "+S.pos:"Qui il pin?")+'</span>'+
+    '<button class="ok" onclick="event.stopPropagation();CA.miraOk()">'+(S.pos?"Metti qui":"Metti il pin")+'</button>'+
+    '<button onclick="event.stopPropagation();CA.miraNo()">Annulla</button>';
+  try{ vw.classList.add("mirando"); }catch(e){}
+  disegnaLente();
+}
+function disegnaLente(){
+  const vw=el("ca-pv"); if(!vw) return;
+  let L=el("ca-lente");
+  const img=vw.querySelector(".pimg");
+  if(!MIRA||!img||!img.src){ if(L) L.remove(); return; }
+  if(!L){ L=document.createElement("div"); L.id="ca-lente"; L.className="plente";
+    L.innerHTML='<i></i>'; vw.appendChild(L); }
+  const D=112, ing=3.2;
+  const w=vw.clientWidth, h=vw.clientHeight;
+  const px=MIRA.x/800*w, py=MIRA.y/560*h;
+  L.style.backgroundImage='url("'+img.src+'")';
+  L.style.backgroundSize=(w*ing)+"px "+(h*ing)+"px";
+  L.style.backgroundPosition=(D/2-px*ing)+"px "+(D/2-py*ing)+"px";
+  /* la lente sta dalla parte opposta al dito, cosi' non la copri */
+  L.classList.toggle("destra", (MIRA.x/800)<0.55);
+}
+function miraOk(){
+  if(!MIRA) return;
+  const p=MIRA; MIRA=null; disegnaMira();
+  const c=stato(S.can);
+  if(S.pos){ const l=c.lav.find(function(x){ return x.id===S.pos; });
+    if(l){ const pa=piantaAttiva(); l.pin={x:p.x,y:p.y}; l.piana=pa?pa.id:null; l.agg=oggi();
+      nota("Lavorazione "+l.n+" localizzata sulla pianta.",l.id); }
+    S.pos=null; salva(); render(); toast("Pin posizionato"); return; }
+  formPin(p.x,p.y);
+}
+function miraNo(){ togliMira(); if(S.pos){ S.pos=null; render(); } }
 function tocca(cx,cy){
   if(S.rot&&S.full){ toast("Raddrizza la pianta per mettere un pin"); return; }
   if(S.sub==="foto"){ nuovaNota(cx,cy); return; }
@@ -6882,8 +7134,10 @@ function attacca(){
   ZCHIAVE=chiave;
   if(!stessa){
     Z={k:1,x:0,y:0};
+    MIRA=null; TRASCMIRA=false;
     ATTIVA = !tel() || !!S.full || !!S.dis || !!S.pos;
   }
+  if(MIRA) setTimeout(disegnaMira, 0);
   pianoAttivo(ATTIVA);
   const pts=new Map(); let st=null,mosso=false,tl=0,dis=false;
   const pc=function(cx,cy){ const r=vw.getBoundingClientRect();
@@ -6891,6 +7145,9 @@ function attacca(){
   const dist=()=>{const a=[...pts.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);};
   const mid=()=>{const a=[...pts.values()];const r=vw.getBoundingClientRect();return{x:(a[0].x+a[1].x)/2-r.left,y:(a[0].y+a[1].y)/2-r.top};};
   vw.addEventListener("pointerdown",e=>{
+    /* il mirino si sposta col dito */
+    if(MIRA && e.target && e.target.closest && e.target.closest("#ca-mira")){
+      TRASCMIRA=true; e.preventDefault(); return; }
     if(S.dis&&S.linea&&S.sub==="foto"&&S.foto){
       const p=pc(e.clientX,e.clientY);
       const u=S.foto.tr[S.foto.tr.length-1];
@@ -6913,6 +7170,7 @@ function attacca(){
     return {x:p.x, y:p.y};
   };
   vw.addEventListener("pointermove",e=>{
+    if(TRASCMIRA){ MIRA=coord(e.clientX,e.clientY); disegnaMira(); e.preventDefault(); return; }
     if(S.dis&&S.linea&&S.sub==="foto"&&S.foto){
       const u=S.foto.tr[S.foto.tr.length-1];
       if(u&&u.aperta&&u.p.length){
@@ -6926,14 +7184,15 @@ function attacca(){
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===2&&st&&st.d){ zoomVerso(st.k*(dist()/st.d),st.m.x,st.m.y); e.preventDefault(); return; }
     if(pts.size===1&&st){ const dx=e.clientX-st.x,dy=e.clientY-st.y;
-      if(Math.hypot(dx,dy)>7){ mosso=true; Z.x=st.ox+dx; Z.y=st.oy+dy; applica(); e.preventDefault(); } } });
+      if(Math.hypot(dx,dy)>13){ mosso=true; Z.x=st.ox+dx; Z.y=st.oy+dy; applica(); e.preventDefault(); } } });
   vw.addEventListener("pointerup",e=>{
+    if(TRASCMIRA){ TRASCMIRA=false; pts.clear(); st=null; mosso=false; return; }
     if(dis){ dis=false; salva(); return; }
     pts.delete(e.pointerId); if(pts.size>0){ st=null; return; }
     /* i tasti dello zoom e i pin non contano come tocco sulla pianta */
     const suiTasti = !!(e.target && e.target.closest && (e.target.closest(".zb") || e.target.closest("button")));
     if(suiTasti){ st=null; mosso=false; return; }
-    const tap=st&&!mosso&&Date.now()-st.t<450;
+    const tap=st&&!mosso&&Date.now()-st.t<700;
     /* primo tocco sul telefono: attiva la pianta, non mette il pin */
     if(tap && tel() && !ATTIVA && !S.full && !S.dis){
       st=null; mosso=false; pianoAttivo(true);
@@ -6941,7 +7200,11 @@ function attacca(){
       return;
     }
     if(tap){ const ora=Date.now();
-      if(ora-tl<300){ tl=0; const r=vw.getBoundingClientRect(); zoomVerso(Z.k>1.5?1:2.6,e.clientX-r.left,e.clientY-r.top); }
+      if(ora-tl<300){ tl=0; togliMira(); const r=vw.getBoundingClientRect(); zoomVerso(Z.k>1.5?1:2.6,e.clientX-r.left,e.clientY-r.top); }
+      else if(usaMira()){
+        tl=ora;
+        if(!(e.target.closest && e.target.closest(".pin")) || MIRA) mettiMira(e.clientX,e.clientY);
+      }
       else { tl=ora; setTimeout(()=>{ if(tl!==ora) return; if(e.target.closest(".pin")) return; tocca(e.clientX,e.clientY); },300); } }
     st=null; mosso=false; applica(); });
   vw.addEventListener("pointercancel",e=>{ pts.delete(e.pointerId); st=null; mosso=false; if(!pts.size) applica(); });
@@ -7450,8 +7713,9 @@ return {render:render,apri:apri,home:home,indietro:indietro,daCliente:daCliente,
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,vaiElenco:vaiElenco,vaiScrivania:vaiScrivania,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,fotoMestiere:fotoMestiere,fotoCrea:fotoCrea,pulisciFoto:pulisciFoto,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
- carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavProponi:tavProponi,tavElimina:tavElimina,pct:pct,modMest:modMest,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,miraOk:miraOk,miraNo:miraNo,vaiElenco:vaiElenco,vaiScrivania:vaiScrivania,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,fotoMestiere:fotoMestiere,fotoCrea:fotoCrea,pulisciFoto:pulisciFoto,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavProponi:tavProponi,tavElimina:tavElimina,
+ livScegli:livScegli,livGestisci:livGestisci,livProponi:livProponi,livCrea:livCrea,livRinomina:livRinomina,livNome:livNome,livTogli:livTogli,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
  card:card,lingua:lingua,copiaTesto:copiaTesto,copiaFoto:copiaFoto,schedaPdf:schedaPdf,anteprima:anteprima,salvaSuDrive:salvaSuDrive,
