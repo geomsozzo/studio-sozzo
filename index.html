@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1139";</script>
+<script>window.VERSIONE="v20260909-1157";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -4413,12 +4413,16 @@ function vistaPianta(c){
       (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
         (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):"")+
       (att.length?'<button class="cbtn pri crep" onclick="CA.report()">Report di queste '+att.length+' lavorazioni</button>':"");
-  const destra=(S.sel?scheda(S.sel):
-      (S.mest.length?S.mest.map(function(id){
+  /* le ditte si vedono solo quando stai guardando uno o due mestieri,
+     e solo se una ditta c'e' davvero: altrimenti riempiono lo schermo di vuoto */
+  const ditteSopra = (S.mest.length && S.mest.length<=2)
+    ? S.mest.filter(function(id){ return ditteDi(c,id).length; }).map(function(id){
         const ds=ditteDi(c,id), m=MEST.find(function(x){ return x.id===id; });
         return '<div class="csec">Ditta per '+esc(m?m.l.toLowerCase():id)+'</div>'+
-          (ds.length?ds.map(function(d){ return schedaDitta(d,true); }).join("")
-            :'<p class="cdvuota">Nessuna ditta assegnata. Aprila dalla linguetta Ditte.</p>'); }).join(""):"")+
+          ds.map(function(d){ return schedaDitta(d,true); }).join(""); }).join("")
+    : "";
+  const destra=(S.sel?scheda(S.sel):
+      ditteSopra+
       (tel()
         ?tendina('mest', 'Mestieri', (S.mest.length?S.mest.length+' scelti':MEST.length+''),
             (S.mest.length||S.cat.length?'<button class="cbtn" onclick="CA.azzeraFiltri()">Togli i filtri</button>':'')+
