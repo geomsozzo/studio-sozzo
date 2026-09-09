@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1127";</script>
+<script>window.VERSIONE="v20260909-1139";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -1463,7 +1463,14 @@ function setSaved(txt){ const el=document.getElementById('saved'); if(el) el.tex
     setSaved('sincronizzato');
     try{ if(window.CA&&CA.statoDi&&document.getElementById('view-can')&&!document.getElementById('view-can').hidden) CA.render(); }catch(e){}
     let TREND=null;
+    /* non ridisegno mentre stai scrivendo o hai un modulo aperto:
+       il disegno butterebbe via quello che stai battendo. Aspetto e riprovo. */
+    const occupato=()=>{
+      try{ return (window.staScrivendo&&window.staScrivendo()) || (window.modaleAperta&&window.modaleAperta()); }
+      catch(e){ return false; }
+    };
     const ridisegnaPiano=()=>{ clearTimeout(TREND); TREND=setTimeout(()=>{
+      if(occupato()){ ridisegnaPiano(); return; }
       try{ ricalcolaUrgenze(); render(); }catch(e){} }, 350); };
     const ascolta=(doc, leggi, scrivi2)=>{
       db.doc(doc).onSnapshot(sn=>{
@@ -3380,6 +3387,15 @@ setView('home'); render();
 #view-can .ccath .n{margin-left:auto;font-weight:600;color:var(--cfaint);text-transform:none;letter-spacing:0;}
 /* riquadro vero attorno a ogni categoria */
 #view-can .crep{margin-top:14px;}
+#view-can .csalvaspia{font-size:12.5px;color:var(--cfaint);text-align:right;margin:2px 0 8px;transition:color .2s;}
+#view-can .csalvaspia.ok{color:var(--cok);font-weight:600;}
+/* trascinamento della riga: a destra la segni fatta, a sinistra apri la foto */
+#view-can .cli{position:relative;touch-action:pan-y;background:var(--cs);}
+#view-can .cswipe{position:absolute;top:0;bottom:0;width:100%;display:flex;align-items:center;
+  font-size:21px;color:#fff;padding:0 20px;pointer-events:none;}
+#view-can .cswipe.dx{left:-100%;background:var(--cok);justify-content:flex-end;}
+#view-can .cswipe.sx{right:-100%;background:#1668DC;justify-content:flex-start;}
+#view-can .cli.torna{transition:transform .18s ease;}
 #view-can .cgruppo{border:1px solid var(--cline2);border-left:4px solid var(--cbordo,var(--cline2));
   border-radius:10px;background:var(--cs2);padding:2px 10px 10px;margin:0 0 12px;}
 #view-can .cgruppo .ccath{margin:9px 0 7px;}
@@ -4094,11 +4110,34 @@ function render(){
     (tel()?barraTel():"")+
     '<div id="can-toast" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#16202A;color:#fff;padding:10px 16px;border-radius:22px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:300"></div>';
   if(S.sub==="pianta"||S.sub==="foto"||S.sub==="tav") attacca();
+  attaccaSwipe();
   adattaColonne();
   salvaPos();
 }
-let RIS=null;
-try{ window.addEventListener("resize", function(){ clearTimeout(RIS); RIS=setTimeout(function(){ if(S.can) render(); else adattaColonne(); }, 220); }); }catch(e){}
+let RIS=null, LARG=(typeof window!=='undefined'?window.innerWidth:0);
+/* Quando si apre la tastiera del telefono la finestra si accorcia e il browser
+   dice "resize". Ridisegnare li' butta via il modulo che stai scrivendo, quindi
+   ridisegno solo se cambia la larghezza, e mai mentre stai scrivendo. */
+function staScrivendo(){
+  const a=document.activeElement;
+  if(!a) return false;
+  const t=(a.tagName||"").toLowerCase();
+  return t==="input" || t==="textarea" || t==="select" || a.isContentEditable;
+}
+window.staScrivendo=staScrivendo;
+function modaleAperta(){
+  const m=document.getElementById("can-modal");
+  return !!(m && m.style.display!=="none" && m.innerHTML);
+}
+window.modaleAperta=modaleAperta;
+try{ window.addEventListener("resize", function(){
+  const w=window.innerWidth;
+  if(w===LARG) return;              /* solo la tastiera, lascio stare */
+  LARG=w;
+  if(staScrivendo()||modaleAperta()) return;
+  clearTimeout(RIS);
+  RIS=setTimeout(function(){ if(S.can) render(); else adattaColonne(); }, 220);
+}); }catch(e){}
 function adattaColonne(){
   const vc=document.getElementById("view-can");
   const giu=vc?vc.querySelector(".clavgiu"):null;
@@ -4124,7 +4163,9 @@ function adattaColonne(){
   }
 }
 let _tcol=null;
-window.addEventListener("resize", function(){ clearTimeout(_tcol); _tcol=setTimeout(adattaColonne,120); });
+window.addEventListener("resize", function(){
+  if(staScrivendo()) return;
+  clearTimeout(_tcol); _tcol=setTimeout(adattaColonne,120); });
 function salvaPos(){ try{ var o=JSON.parse(localStorage.getItem("ui-pos")||"{}");
    o.can=S.can; o.sub=(S.sub==="foto"||S.sub==="tav")?"pianta":S.sub; o.mest=S.mest.slice(); o.amb=S.amb||null; o.filtro=S.filtro; o.sel=S.sel;
    localStorage.setItem("ui-pos",JSON.stringify(o)); }catch(e){} }
@@ -4198,7 +4239,8 @@ function riga(l){
   const c=stato(S.can);
   const cest='<button class="ccest'+(S.canc===l.id?" conferma":"")+'" title="Rimuovi la lavorazione" '+
     'onclick="event.stopPropagation();CA.elimina('+l.id+')">'+(S.canc===l.id?"Confermi?":CESTINO)+'</button>';
-  return '<div class="cli" role="button" tabindex="0" onclick="CA.sel('+l.id+')">'+
+  return '<div class="cli" role="button" tabindex="0" data-lav="'+l.id+'" onclick="CA.sel('+l.id+')">'+
+   '<span class="cswipe sx">&#128247;</span><span class="cswipe dx">&#10003;</span>'+
    '<span class="cnum" style="background:'+CATS[l.cat].c+'">'+l.n+'</span>'+
    '<span class="m"><span class="t">'+esc(l.tit)+'</span><span class="s">'+
    (l.nuovo?'<span class="ctag nuovo">nuovo</span> ':"")+
@@ -4740,7 +4782,9 @@ function chiudiModale(){ const m=el("can-modal"); if(m){ m.style.display="none";
 function apri(id){ S.can=String(id); S.sub="pianta"; S.sel=null; S.mest=[]; S.cat=[]; S.pos=null; render(); window.scrollTo(0,0); }
 function home(){ S.can=null; S.sel=null; render(); }
 function tab(g){ S.sub=g; S.sel=null; render(); }
-function sel(id){ S.sel=id; S.canc=null; S.full=false; render(); window.scrollTo(0,0); }
+function sel(id){
+  if(appenaTrascinato()) return;   /* era un trascinamento, non un tocco */
+  S.sel=id; S.canc=null; S.full=false; render(); window.scrollTo(0,0); }
 function chiudi(){ S.sel=null; S.canc=null; render(); }
 function togli(arr,v){ const i=arr.indexOf(v); if(i<0) arr.push(v); else arr.splice(i,1); return arr; }
 function mest(id){
@@ -4819,18 +4863,40 @@ function selMest(mid){
     MEST.map(function(m){ return '<option value="'+m.id+'"'+(mid===m.id?' selected':'')+'>'+esc(m.l)+'</option>'; }).join("")+
     '</select></div>';
 }
+/* si ricorda l'ultima lavorazione fatta in questo cantiere,
+   cosi' in cantiere scrivi solo la descrizione e premi Crea */
+function ultimaScelta(){
+  try{
+    const o=JSON.parse(localStorage.getItem("ca-ultimo")||"{}");
+    return o[S.can] || null;
+  }catch(e){ return null; }
+}
+function ricordaScelta(l){
+  try{
+    const o=JSON.parse(localStorage.getItem("ca-ultimo")||"{}");
+    o[S.can]={cat:l.cat, loc:l.loc||"", imp:l.imp||"", urg:l.urg||"normale"};
+    localStorage.setItem("ca-ultimo", JSON.stringify(o));
+  }catch(e){}
+}
 function formPin(x,y){
-  const mid = MEST[0].id;
-  modale("Nuova lavorazione","posizione x "+x+", y "+y+" sulla tavola",
-   selMest(mid)+
-   bloccoCat(mid, null)+
-   '<div class="cfield"><label>Ambiente</label><input id="ca-l" placeholder="Es. bagno"></div>'+
+  const u=ultimaScelta();
+  const cat=(u&&CATS[u.cat])?u.cat:MEST[0].c[0];
+  const mid=mestDi(cat);
+  const loc=(u&&u.loc)||"";
+  const urg=(u&&u.urg)||"normale";
+  modale("Nuova lavorazione", u?"riparte dall’ultima che hai messo qui":("posizione x "+x+", y "+y+" sulla tavola"),
    '<div class="cfield"><label>Descrizione</label><input id="ca-t" placeholder="Es. rifacimento soglia in pietra leccese"></div>'+
-   '<div class="cfield"><label>Urgenza</label><select id="ca-u"><option value="normale">Normale</option><option value="urgente">Urgente</option><option value="bloccante">Bloccante</option></select></div>'+
+   selMest(mid)+
+   bloccoCat(mid, cat)+
+   '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(loc)+'" placeholder="Es. bagno"></div>'+
+   '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+
+     ['normale','urgente','bloccante'].map(function(k){
+       return '<option value="'+k+'"'+(urg===k?' selected':'')+'>'+esc(UR[k]||k)+'</option>'; }).join("")+'</select></div>'+
    '<div class="cfield"><label>Nota</label><textarea id="ca-n" placeholder="Quello che diresti a voce sul posto"></textarea></div>'+
-   bloccoImpresa(MEST[0].c[0], null)+
+   bloccoImpresa(cat, (u&&u.imp)||null)+
    '<button class="cbtn pri" onclick="CA.creaPin('+x+','+y+')">Crea il pin</button>'+
    '<button class="cbtn" onclick="CA.chiudiModale()">Annulla</button>');
+  setTimeout(function(){ const e=el("ca-t"); if(e) e.focus(); }, 120);
 }
 function creaPin(x,y){
   const c=stato(S.can), p=piantaAttiva();
@@ -4839,6 +4905,7 @@ function creaPin(x,y){
     imp:gi?String(gi.value||"").trim():"",loc:(el("ca-l").value||"").trim(),urg:el("ca-u").value,
     nota:(el("ca-n").value||"").trim(),stato:"dafare",pct:0,pin:{x:x,y:y},piana:p?p.id:null,blocca:[],nuovo:true,creato:oggi(),agg:oggi()};
   c.next++; c.lav.push(l); nota("Creata la lavorazione "+l.n+", "+l.tit+".",l.id);
+  ricordaScelta(l);
   salva(); chiudiModale(); render(); toast("Pin "+l.n+" creato");
 }
 function bloccoImpresa(cat, val){
@@ -5096,22 +5163,57 @@ function datalistDitte(){
 }
 function modifica(id){
   const c=stato(S.can), l=c.lav.find(x=>x.id===id);
+  const mid=mestDi(l.cat);
   modale("Modifica "+l.n,esc(l.tit),
-   '<div class="cfield"><label>Categoria</label><select id="ca-c" onchange="CA.aggiornaImpresa()">'+Object.keys(CATS).map(k=>'<option value="'+k+'" '+(k===l.cat?"selected":"")+'>'+esc(CATS[k].n)+'</option>').join("")+'</select></div>'+
-   bloccoImpresa(l.cat, l.imp||null)+
-   '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(l.loc||"")+'" placeholder="Es. bagno"></div>'+
    '<div class="cfield"><label>Descrizione</label><input id="ca-t" value="'+esc(l.tit)+'"></div>'+
+   selMest(mid)+
+   bloccoCat(mid, l.cat)+
+   '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(l.loc||"")+'" placeholder="Es. bagno"></div>'+
    '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+Object.keys(UR).map(k=>'<option value="'+k+'" '+(k===l.urg?"selected":"")+'>'+UR[k]+'</option>').join("")+'</select></div>'+
    '<div class="cfield"><label>Nota</label><textarea id="ca-n">'+esc(l.nota||"")+'</textarea></div>'+
-   '<button class="cbtn pri" onclick="CA.salvaMod('+id+')">Salva</button>'+
+   bloccoImpresa(l.cat, l.imp||null)+
+   '<div class="csalvaspia" id="ca-spia">si salva da solo</div>'+
+   '<button class="cbtn pri" onclick="CA.salvaMod('+id+')">Fatto</button>'+
    '<button class="cbtn dan" onclick="CA.elimina('+id+')">Elimina la lavorazione</button>');
+  autoSalva(id);
+}
+/* ogni campo si salva da solo: niente piu' modifiche perse uscendo di fretta */
+function autoSalva(id){
+  const m=el("can-modal"); if(!m) return;
+  let attesa=null;
+  const scrivi=function(){
+    if(prendiCampi(id)){
+      const s=el("ca-spia");
+      if(s){ s.textContent="salvato"; s.classList.add("ok");
+        clearTimeout(attesa); attesa=setTimeout(function(){ s.textContent="si salva da solo"; s.classList.remove("ok"); }, 1600); }
+    }
+  };
+  /* ascolto sul contenitore, cosi' vale anche per i campi rifatti
+     quando cambi mestiere o categoria */
+  m.addEventListener("change", scrivi);
+  m.addEventListener("focusout", scrivi);
+}
+function prendiCampi(id){
+  const c=stato(S.can), l=c.lav.find(function(x){ return x.id===id; });
+  if(!l) return false;
+  const g=function(k){ const e=el(k); return e?String(e.value||""):null; };
+  const t=g("ca-t"), cat=g("ca-c"), loc=g("ca-l"), urg=g("ca-u"), nt=g("ca-n"), imp=g("ca-i");
+  const prima=JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp]);
+  if(t!=null && t.trim()) l.tit=t.trim();
+  if(cat!=null && CATS[cat]) l.cat=cat;
+  if(loc!=null) l.loc=loc.trim();
+  if(urg!=null) l.urg=urg;
+  if(nt!=null) l.nota=nt.trim();
+  if(imp!=null) l.imp=imp.trim();
+  if(JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp])===prima) return false;
+  l.agg=oggi(); salva();
+  return true;
 }
 function salvaMod(id){
   const c=stato(S.can), l=c.lav.find(x=>x.id===id);
-  l.tit=(el("ca-t").value||"").trim()||l.tit; l.cat=el("ca-c").value;
-  const gi=el("ca-i"); l.imp=gi?String(gi.value||"").trim():(l.imp||"");
-  l.loc=(el("ca-l").value||"").trim(); l.urg=el("ca-u").value; l.nota=(el("ca-n").value||"").trim(); l.agg=oggi();
-  nota("Modificata la lavorazione "+l.n+".",id); salva(); chiudiModale(); render(); toast("Salvato");
+  if(prendiCampi(id)) nota("Modificata la lavorazione "+l.n+".",id);
+  ricordaScelta(l);
+  salva(); chiudiModale(); render(); toast("Salvato");
 }
 function elimina(id){
   if(S.canc!==id){ S.canc=id; chiudiModale(); render(); toast("Premi di nuovo Rimuovi per confermare"); return; }
@@ -5833,9 +5935,61 @@ function tocca(cx,cy){
     nota("Lavorazione "+l.n+" localizzata sulla pianta.",l.id); salva(); render(); toast("Pin "+l.n+" posizionato"); return; }
   formPin(p.x,p.y);
 }
+/* ---- trascinamento delle righe ----
+   verso destra la lavorazione diventa fatta, verso sinistra si apre la foto.
+   Cosi' in cantiere non devi aprire la scheda per le due cose che fai sempre. */
+let SWIPE=null, SWIPEQ=0, SWIPEON=false;
+function attaccaSwipe(){
+  const box=el("view-can"); if(!box||SWIPEON) return; SWIPEON=true;
+  const SOGLIA=78;
+  box.addEventListener("pointerdown", function(e){
+    if(!tel()) return;
+    const r=e.target.closest && e.target.closest(".cli[data-lav]");
+    if(!r) return;
+    SWIPE={r:r, x:e.clientX, y:e.clientY, dx:0, muove:false};
+    r.classList.remove("torna");
+  });
+  box.addEventListener("pointermove", function(e){
+    if(!SWIPE) return;
+    const dx=e.clientX-SWIPE.x, dy=e.clientY-SWIPE.y;
+    if(!SWIPE.muove){
+      if(Math.abs(dy)>Math.abs(dx)){ SWIPE=null; return; }   /* sta scorrendo la pagina */
+      if(Math.abs(dx)<12) return;
+      SWIPE.muove=true;
+    }
+    SWIPE.dx=Math.max(-150, Math.min(150, dx));
+    SWIPE.r.style.transform="translateX("+SWIPE.dx+"px)";
+    e.preventDefault();
+  });
+  const finito=function(){
+    if(!SWIPE) return;
+    const r=SWIPE.r, dx=SWIPE.dx, id=+r.dataset.lav, muove=SWIPE.muove;
+    SWIPE=null;
+    r.classList.add("torna"); r.style.transform="";
+    if(!muove) return;
+    SWIPEQ=Date.now();
+    if(dx>SOGLIA){ avanza(id,"verificata",100); return; }
+    if(dx<-SOGLIA){ sceltaFoto(id); return; }
+  };
+  box.addEventListener("pointerup", finito);
+  box.addEventListener("pointercancel", finito);
+  box.addEventListener("pointerleave", finito);
+}
+function appenaTrascinato(){ return Date.now()-SWIPEQ<420; }
+let ZCHIAVE=null;
 function attacca(){
-  const vw=el("ca-pv"); if(!vw) return; Z={k:1,x:0,y:0};
-  ATTIVA = !tel() || !!S.full || !!S.dis || !!S.pos;
+  const vw=el("ca-pv"); if(!vw) return;
+  /* l'ingrandimento resta com'era finche' guardi la stessa tavola:
+     prima ogni tocco riportava la pianta al cento per cento */
+  const pa=(typeof piantaAttiva==="function")?piantaAttiva():null;
+  const chiave=[S.can, S.sub, pa?pa.id:"", S.full?1:0,
+    S.foto?(S.foto.lav+"/"+S.foto.idx):""].join("|");
+  const stessa = (chiave===ZCHIAVE);
+  ZCHIAVE=chiave;
+  if(!stessa){
+    Z={k:1,x:0,y:0};
+    ATTIVA = !tel() || !!S.full || !!S.dis || !!S.pos;
+  }
   pianoAttivo(ATTIVA);
   const pts=new Map(); let st=null,mosso=false,tl=0,dis=false;
   const pc=function(cx,cy){ const r=vw.getBoundingClientRect();
