@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1505";</script>
+<script>window.VERSIONE="v20260909-1535";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -3975,6 +3975,13 @@ setView('home'); render();
 #view-can .cchip b{font-family:var(--cmono,inherit);font-weight:600;color:var(--cdim);}
 #view-can .cchip.on{background:var(--cacc);border-color:var(--cacc);color:#fff;}
 #view-can .cchip.on b{color:#fff;opacity:.85;}
+/* i locali gia' registrati, sotto il campo Ambiente */
+#view-can .cambq{margin:7px 0 0;gap:5px;}
+#view-can .cambq .cchip{padding:5px 10px;font-size:12px;font-weight:500;}
+#can-modal .cambq{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 0;}
+#can-modal .cambq .cchip{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;
+  border:1px solid var(--cline2);background:var(--cs);color:var(--ctext);font-size:12px;cursor:pointer;}
+#can-modal .cambq .cchip.on{background:var(--cacc);border-color:var(--cacc);color:#fff;}
 #view-can .cfila{display:grid;grid-template-columns:37% minmax(0,1fr);gap:10px;align-items:stretch;margin-top:10px;}
 #view-can .cfila>div:last-child{display:flex;flex-direction:column;gap:6px;}
 #view-can .cfila>div:last-child>*{flex:0 0 auto;min-height:38px;margin:0;}
@@ -4789,7 +4796,8 @@ function listaCantieri(){
   return (S.filtro?'<div class="ctop"><button class="cback" onclick="CA.tuttiCantieri()">&lsaquo; Tutti i cantieri</button><div><h3>'+esc(S.filtro)+'</h3><div class="csub">i cantieri di questo cliente</div></div></div>':"")+
    '<div class="csec" style="margin-top:14px">Cantieri<span class="n">'+cs.length+(S.filtro?"":(S.tuttiCan?" in tutto":" aperti"))+'</span></div>'+
    '<div class="clista">'+cs.map(p=>{
-     const c=(window.CANT&&window.CANT[p.id])||{lav:[],ck:[]}; if(!Array.isArray(c.lav)) c.lav=[];
+     const c0=(window.CANT&&window.CANT[p.id])||{lav:[],ck:[]}; if(!Array.isArray(c0.lav)) c0.lav=[];
+     const c={lav:c0.lav.filter(function(l){ return !fantasma(l) && !daSistemare(l); }), ck:c0.ck||[]};
      const ap=c.lav.filter(l=>l.stato!=="verificata").length,
        bl=c.lav.filter(l=>l.urg==="bloccante"&&l.stato!=="verificata").length,
        dv=c.lav.filter(l=>l.stato==="dichiarata").length,
@@ -4815,15 +4823,15 @@ function riga(l){
   const c=stato(S.can);
   const cest='<button class="ccest'+(S.canc===l.id?" conferma":"")+'" title="Rimuovi la lavorazione" '+
     'onclick="event.stopPropagation();CA.elimina('+l.id+')">'+(S.canc===l.id?"Confermi?":CESTINO)+'</button>';
-  return '<div class="cli" role="button" tabindex="0" data-lav="'+l.id+'" onclick="CA.sel('+l.id+')">'+
+  return '<div class="cli" role="button" tabindex="0" data-lv="'+l.id+'" onclick="CA.sel('+l.id+')">'+
    '<span class="cswipe sx">&#128247;</span><span class="cswipe dx">&#10003;</span>'+
    '<span class="cnum" style="background:'+CATS[l.cat].c+'">'+l.n+'</span>'+
    '<span class="m"><span class="t">'+esc(l.tit)+'</span><span class="s">'+
    (l.nuovo?'<span class="ctag nuovo">nuovo</span> ':"")+
-   '<span style="color:'+ST[l.stato].c+'">'+ST[l.stato].l+'</span>'+
+   (ST[l.stato]?'<span style="color:'+ST[l.stato].c+'">'+ST[l.stato].l+'</span>':"")+
    (l.loc?' &middot; '+esc(l.loc):"")+(l.imp?' &middot; '+esc(l.imp):"")+
    (l.pin?"":' &middot; <span class="ctag amb">senza posizione</span>')+
-   (l.urg!=="normale"?' <span class="ctag red">'+UR[l.urg].toLowerCase()+'</span>':"")+'</span>'+
+   ((l.urg&&l.urg!=="normale"&&UR[l.urg])?' <span class="ctag red">'+UR[l.urg].toLowerCase()+'</span>':"")+'</span>'+
    (l.nota?'<span class="cnota">'+esc(String(l.nota).replace(/\s+/g," ").slice(0,220))+'</span>':"")+'</span>'+
    cest+
    '<span class="r">'+quando(l.agg||l.creato)+'<span style="min-width:36px;text-align:right">'+(l.pct||0)+'%</span><span class="cchev">&rsaquo;</span></span></div>';
@@ -4832,7 +4840,7 @@ function pulsantiCat(c, usate, perPin){
   if(!usate.length) return '';
   const conta=function(k){
     return c.lav.filter(function(l){
-      return (!k||l.cat===k) && inMest(l) && (!perPin||l.pin) &&
+      return !fantasma(l) && !daSistemare(l) && (!k||l.cat===k) && inMest(l) && (!perPin||l.pin) &&
         (S.fatte || l.stato!=="verificata"); }).length;
   };
   return '<div class="cchips">'+
@@ -4911,7 +4919,7 @@ function chipTuttiMest(){
 }
 function mestScroll(c){
   return '<div class="cscroll">'+chipTuttiMest()+MEST.map(function(m){
-    const ls=c.lav.filter(function(l){ return m.c.indexOf(l.cat)>=0; });
+    const ls=c.lav.filter(function(l){ return !fantasma(l) && !daSistemare(l) && m.c.indexOf(l.cat)>=0; });
     const ap=ls.filter(function(l){ return l.stato!=="verificata"; }).length;
     const col=ls.length?CATS[ls[0].cat].c:CATS[m.c[0]].c, on=S.mest.indexOf(m.id)>=0;
     return '<button class="cchip'+(on?" on":"")+'"'+(on?' style="background:'+col+';border-color:'+col+'"':'')+
@@ -4941,15 +4949,19 @@ function piantaPiena(c){
 function vistaPianta(c){
   if(tel()&&S.full) return piantaPiena(c);
   const p=piantaAttiva();
-  const tutti=c.lav.filter(function(l){ return suQuestaTavola(l,p); });
+  /* le voci fantasma non compaiono e non si contano */
+  const lav=c.lav.filter(function(l){ return !fantasma(l); });
+  const tutti=lav.filter(function(l){ return suQuestaTavola(l,p); });
   const dentro=filtrata;
   let acc=tutti.filter(dentro), spe=tutti.filter(function(l){ return !dentro(l); });
   if(!S.fatte){ spe=spe.concat(acc.filter(l=>l.stato==="verificata")); acc=acc.filter(l=>l.stato!=="verificata"); }
-  const vis=c.lav.filter(dentro);
-  const att=vis.filter(l=>l.stato!=="verificata"), fat=vis.filter(l=>l.stato==="verificata");
-  const dec=c.lav.filter(function(l){ return ["dichiarata","sospesa"].indexOf(l.stato)>=0 && dentro(l); });
+  const vis=lav.filter(dentro);
+  const sist=vis.filter(daSistemare);
+  const att=vis.filter(function(l){ return l.stato!=="verificata" && !daSistemare(l); });
+  const fat=vis.filter(l=>l.stato==="verificata");
+  const dec=lav.filter(function(l){ return ["dichiarata","sospesa"].indexOf(l.stato)>=0 && dentro(l); });
   const mest=MEST.map(m=>{
-    const ls=c.lav.filter(l=>m.c.indexOf(l.cat)>=0), ap=ls.filter(l=>l.stato!=="verificata").length,
+    const ls=lav.filter(l=>!daSistemare(l) && m.c.indexOf(l.cat)>=0), ap=ls.filter(l=>l.stato!=="verificata").length,
       bl=ls.filter(l=>l.urg==="bloccante"&&l.stato!=="verificata").length;
     const col=ls.length?CATS[ls[0].cat].c:CATS[m.c[0]].c, on=S.mest.indexOf(m.id)>=0;
     return '<button class="cli'+(on?" pieno":"")+'"'+
@@ -4960,11 +4972,11 @@ function vistaPianta(c){
      '<span class="r">'+(bl?'<span class="cdot"></span>':"")+'<span class="ccnt">'+ls.filter(l=>l.pin).length+'</span><span class="cchev">&rsaquo;</span></span></button>';}).join("");
 
   const usate=[];
-  c.lav.forEach(function(l){
+  lav.forEach(function(l){
     if(!inMest(l)) return;
     if(usate.indexOf(l.cat)<0) usate.push(l.cat); });
   const scelta = (p && c.piante.length>1) ? '<div class="ctav">'+c.piante.map(function(t){
-      const q=c.lav.filter(function(l){ return l.pin && (l.piana? l.piana===t.id : t.id===c.piante[0].id); }).length;
+      const q=lav.filter(function(l){ return l.pin && (l.piana? l.piana===t.id : t.id===c.piante[0].id); }).length;
       return '<button class="ctavb'+(t.id===p.id?" on":"")+'" onclick="CA.usaTavola(\''+t.id+'\')">'+
         esc(t.nome||"Tavola")+' <b>'+q+'</b></button>'; }).join("")+'</div>' : '';
   const piano = p ? '<div class="cpiano">'+scelta+
@@ -4986,6 +4998,9 @@ function vistaPianta(c){
             ? elencoPerCategoria(att, riga)
             : '<p class="chint">Scegli una categoria qui sopra per vederne le lavorazioni. Puoi sceglierne piu\' di una, oppure premere Tutte.</p>')
         : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
+      (sist.length?'<div class="csec">Foto da sistemare<span class="n">'+sist.length+'</span></div>'+
+        '<p class="chint" style="margin:0 0 8px">Scatti presi al volo. Dagli un nome e mettili sulla pianta, allora contano fra le lavorazioni.</p>'+
+        '<div class="clist">'+sist.map(riga).join("")+'</div>':"")+
       (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
         (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):"")+
       (att.length?'<button class="cbtn pri crep" onclick="CA.report()">Report di queste '+att.length+' lavorazioni</button>':"");
@@ -5369,8 +5384,48 @@ function modale(tit,sub,body){
 function chiudiModale(){ const m=el("can-modal"); if(m){ m.style.display="none"; m.innerHTML=""; } }
 
 /* ---------- azioni ---------- */
-function apri(id){ S.can=String(id); S.sub="pianta"; S.sel=null; S.mest=[]; S.cat=[]; S.pos=null; render(); window.scrollTo(0,0); }
+function apri(id){ S.can=String(id); S.sub="pianta"; S.sel=null; S.mest=[]; S.cat=[]; S.pos=null;
+  if(sfoltisci(stato(S.can))) salva();
+  render(); window.scrollTo(0,0); }
+/* voce fantasma: nessun pin, nessuna foto, nessuna nota e nessun titolo vero.
+   Nascevano dai vecchi tasti Foto e restavano contate fra le lavorazioni attive. */
+function fantasma(l){
+  if(!l) return false;
+  const g=(l.gal&&l.gal.length)?l.gal.length:0;
+  const t=String(l.tit||"").trim();
+  return !l.pin && !g && !l.fsrc && !String(l.nota||"").trim() && !String(l.desc||"").trim() &&
+    (!t || t==="Foto di cantiere");
+}
+/* foto scattate al volo e mai sistemate: hanno la foto ma non un titolo vero
+   e non stanno sulla pianta. Non sono lavorazioni, stanno in un blocco a parte. */
+function daSistemare(l){
+  if(!l || l.pin) return false;
+  const t=String(l.tit||"").trim();
+  return (t==="Foto di cantiere" || !t) && l.stato!=="verificata";
+}
+function sfoltisci(c){
+  if(!c||!c.lav) return false;
+  const via=c.lav.filter(fantasma); if(!via.length) return false;
+  c.lav=c.lav.filter(function(l){ return !fantasma(l); });
+  if(S.sel && !c.lav.some(function(l){ return l.id===S.sel; })) S.sel=null;
+  return true;
+}
 function home(){ S.can=null; S.sel=null; render(); }
+/* un passo indietro dentro il cantiere, per il tasto indietro del telefono.
+   Torna vero se ha davvero chiuso qualcosa. */
+function indietro(){
+  if(document.body.getAttribute("data-vista")!=="can") return false;
+  if(el("ca-pop")){ chiudiPop(); return true; }
+  if(S.pos){ S.pos=null; render(); return true; }
+  if(S.full){ pieno(false); return true; }
+  if(S.foto){ S.foto=null; S.dis=false; render(); return true; }
+  if(S.sel!=null){ chiudi(); return true; }
+  if(S.amb){ ambChiudi(); return true; }
+  if(S.sub && S.sub!=="pianta"){ S.sub="pianta"; render(); window.scrollTo(0,0); return true; }
+  if(S.can){ home(); window.scrollTo(0,0); return true; }
+  if(S.filtro){ S.filtro=null; render(); return true; }
+  return false;
+}
 function vaiElenco(){
   if(!S.tende) S.tende={};
   S.tende.lav=true;
@@ -5482,6 +5537,44 @@ function ricordaScelta(l){
     localStorage.setItem("ca-ultimo", JSON.stringify(o));
   }catch(e){}
 }
+/* Ambiente: si sceglie fra quelli gia' registrati, oppure se ne scrive uno nuovo
+   e nasce da solo nella pagina Ambienti, dove poi lo modifichi o lo cancelli. */
+function campoAmbiente(val){
+  const c=stato(S.can);
+  const miei=(c.amb||[]).map(function(a){ return a.nome; }).filter(Boolean);
+  const altri=AMBTIPO.filter(function(x){
+    return !miei.some(function(n){ return normn(n)===normn(x); }); });
+  const chip=function(x){
+    return '<button type="button" class="cchip'+(normn(x)===normn(val)?" on":"")+'" '+
+      'onclick="CA.ambScegli(this)" data-amb="'+esc(x)+'">'+esc(x)+'</button>'; };
+  return '<div class="cfield"><label>Ambiente</label>'+
+   '<input id="ca-l" list="ca-ambdl" autocomplete="off" value="'+esc(val||"")+'" placeholder="Es. bagno">'+
+   '<datalist id="ca-ambdl">'+miei.concat(altri).map(function(x){
+     return '<option value="'+esc(x)+'">'; }).join("")+'</datalist>'+
+   (miei.length
+     ? '<div class="cchips cambq">'+miei.slice(0,12).map(chip).join("")+'</div>'
+     : '<p class="chint" style="margin:6px 0 0">Scrivi il nome del locale, lo creo io nella pagina Ambienti.</p>')+
+   '</div>';
+}
+function ambScegli(b){
+  const e=el("ca-l"); if(!e||!b) return;
+  const v=b.getAttribute("data-amb")||"";
+  e.value=(normn(e.value)===normn(v))?"":v;
+  const box=b.parentElement;
+  if(box) [].forEach.call(box.children, function(x){
+    x.classList.toggle("on", x.getAttribute("data-amb")===e.value && !!e.value); });
+}
+/* se il nome scritto non e' fra gli ambienti, lo aggiungo io */
+function assicuraAmbiente(c, nome){
+  const n=String(nome||"").trim(); if(!n) return "";
+  if(!Array.isArray(c.amb)) c.amb=[];
+  const g=c.amb.find(function(a){ return normn(a.nome)===normn(n); });
+  if(g) return g.nome;
+  c.amb.push({id:"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    nome:n, mq:"", h:"", q:oggi()});
+  nota("Aggiunto l'ambiente "+n+", nato da una lavorazione.");
+  return n;
+}
 function formPin(x,y){
   const u=ultimaScelta();
   const cat=(u&&CATS[u.cat])?u.cat:MEST[0].c[0];
@@ -5492,7 +5585,7 @@ function formPin(x,y){
    '<div class="cfield"><label>Descrizione</label><input id="ca-t" placeholder="Es. rifacimento soglia in pietra leccese"></div>'+
    selMest(mid)+
    bloccoCat(mid, cat)+
-   '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(loc)+'" placeholder="Es. bagno"></div>'+
+   campoAmbiente(loc)+
    '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+
      ['normale','urgente','bloccante'].map(function(k){
        return '<option value="'+k+'"'+(urg===k?' selected':'')+'>'+esc(UR[k]||k)+'</option>'; }).join("")+'</select></div>'+
@@ -5506,7 +5599,7 @@ function creaPin(x,y){
   const c=stato(S.can), p=piantaAttiva();
   const gi=el("ca-i");
   const l={id:c.next,n:c.next,tit:(el("ca-t").value||"").trim()||"Nuova lavorazione",cat:el("ca-c").value,
-    imp:gi?String(gi.value||"").trim():"",loc:(el("ca-l").value||"").trim(),urg:el("ca-u").value,
+    imp:gi?String(gi.value||"").trim():"",loc:assicuraAmbiente(c,(el("ca-l").value||"").trim()),urg:el("ca-u").value,
     nota:(el("ca-n").value||"").trim(),stato:"dafare",pct:0,pin:{x:x,y:y},piana:p?p.id:null,blocca:[],nuovo:true,creato:oggi(),agg:oggi()};
   c.next++; c.lav.push(l); nota("Creata la lavorazione "+l.n+", "+l.tit+".",l.id);
   ricordaScelta(l);
@@ -5772,7 +5865,7 @@ function modifica(id){
    '<div class="cfield"><label>Descrizione</label><input id="ca-t" value="'+esc(l.tit)+'"></div>'+
    selMest(mid)+
    bloccoCat(mid, l.cat)+
-   '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(l.loc||"")+'" placeholder="Es. bagno"></div>'+
+   campoAmbiente(l.loc||"")+
    '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+Object.keys(UR).map(k=>'<option value="'+k+'" '+(k===l.urg?"selected":"")+'>'+UR[k]+'</option>').join("")+'</select></div>'+
    '<div class="cfield"><label>Nota</label><textarea id="ca-n">'+esc(l.nota||"")+'</textarea></div>'+
    bloccoImpresa(l.cat, l.imp||null)+
@@ -5805,7 +5898,7 @@ function prendiCampi(id){
   const prima=JSON.stringify([l.tit,l.cat,l.loc,l.urg,l.nota,l.imp]);
   if(t!=null && t.trim()) l.tit=t.trim();
   if(cat!=null && CATS[cat]) l.cat=cat;
-  if(loc!=null) l.loc=loc.trim();
+  if(loc!=null) l.loc=assicuraAmbiente(c, loc.trim());
   if(urg!=null) l.urg=urg;
   if(nt!=null) l.nota=nt.trim();
   if(imp!=null) l.imp=imp.trim();
@@ -5905,10 +5998,13 @@ function tavRinomina(id){
    '<button class="cbtn pri" onclick="CA.tavNome(\''+id+'\')">Salva</button>'+
    '<button class="cbtn" onclick="CA.tavole()">Annulla</button>');
 }
-function tavNome(id){
+function tavNome(id, appena){
   const c=stato(S.can), t=c.piante.find(function(p){ return p.id===id; }); if(!t) return;
   const v=(el("tv-nome").value||"").trim(); if(!v){ toast("Serve un nome"); return; }
-  t.nome=v; nota("Rinominata la tavola in "+v+"."); salva(); render(); tavole(); toast("Rinominata");
+  t.nome=v; nota("Rinominata la tavola in "+v+"."); salva(); render();
+  /* se arriva dal caricamento chiudo e basta, l'elenco delle tavole non serve */
+  if(appena) chiudiModale(); else tavole();
+  toast(appena?"Tavola salvata come "+v:"Rinominata");
 }
 function tavElimina(id){
   const c=stato(S.can);
@@ -5946,7 +6042,22 @@ function aggiungi(nome,src,ar){
   const c=stato(S.can), id="t"+Date.now().toString(36);
   c.piante.push({id:id,nome:nome,ar:ar,q:oggi()}); c.pa=id; scriviImg(id,src);
   nota("Caricata la tavola "+nome+"."); salva(); render(); toast("Tavola caricata");
+  /* appena caricata chiedo come si chiama, cosi' non restano nomi di file */
+  battezza(id, nome);
 }
+function battezza(id, nome){
+  modale("Come si chiama questa tavola?", "il nome che le dai lo vedi ovunque",
+   '<div class="cfield"><label>Nome della tavola</label>'+
+     '<input id="tv-nome" value="'+esc(nome||"")+'" placeholder="Es. Pianta piano terra"></div>'+
+   '<div class="cchips">'+
+     ["Pianta piano terra","Pianta primo piano","Pianta seminterrato","Prospetto","Sezione","Stato di fatto","Progetto"]
+       .map(function(x){ return '<button class="cchip" onclick="CA.tavProponi(\''+x+'\')">'+esc(x)+'</button>'; }).join("")+
+   '</div>'+
+   '<button class="cbtn pri" onclick="CA.tavNome(\''+id+'\',1)">Salva il nome</button>'+
+   '<button class="cbtn" onclick="CA.chiudiModale()">Lascia cosi\'</button>');
+  setTimeout(function(){ const e=el("tv-nome"); if(e){ e.focus(); e.select(); } }, 120);
+}
+function tavProponi(x){ const e=el("tv-nome"); if(e){ e.value=x; e.focus(); } }
 /* foto */
 function leggiScatto(f, quando, max, q){
   if(!f){ toast("Nessuna foto scelta"); return; }
@@ -6097,7 +6208,7 @@ function fotoMestiere(mid){
   modale(lista.length>1?(lista.length+" foto, "+m.l):("Foto, "+m.l), "ambiente, descrizione e il resto",
     '<div class="cfield"><label>Descrizione</label><input id="ca-t" placeholder="Es. scatola derivazione da spostare"></div>'+
     bloccoCat(mid, cat)+
-    '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(loc)+'" placeholder="Es. cucina"></div>'+
+    campoAmbiente(loc)+
     '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+
       ['normale','urgente','bloccante'].map(function(k){
         return '<option value="'+k+'">'+esc(UR[k]||k)+'</option>'; }).join("")+'</select></div>'+
@@ -6115,7 +6226,7 @@ function fotoCrea(){
   const g=function(k){ const e=el(k); return e?String(e.value||"").trim():""; };
   const cat=g("ca-c")||(MEST.find(function(x){ return x.id===mid; })||MEST[0]).c[0];
   const l={id:c.next,n:c.next,tit:g("ca-t")||"Foto di cantiere",cat:cat,
-    imp:g("ca-i"),loc:g("ca-l"),urg:g("ca-u")||"normale",nota:g("ca-n"),
+    imp:g("ca-i"),loc:assicuraAmbiente(c,g("ca-l")),urg:g("ca-u")||"normale",nota:g("ca-n"),
     stato:"dafare",pct:0,pin:null,piana:p?p.id:null,blocca:[],nuovo:true,
     creato:oggi(),agg:oggi()};
   c.next++; c.lav.push(l);
@@ -6727,7 +6838,7 @@ function attaccaSwipe(){
   const SOGLIA=78;
   box.addEventListener("pointerdown", function(e){
     if(!tel()) return;
-    const r=e.target.closest && e.target.closest(".cli[data-lav]");
+    const r=e.target.closest && e.target.closest(".cli[data-lv]");
     if(!r) return;
     SWIPE={r:r, x:e.clientX, y:e.clientY, dx:0, muove:false};
     r.classList.remove("torna");
@@ -6746,7 +6857,7 @@ function attaccaSwipe(){
   });
   const finito=function(){
     if(!SWIPE) return;
-    const r=SWIPE.r, dx=SWIPE.dx, id=+r.dataset.lav, muove=SWIPE.muove;
+    const r=SWIPE.r, dx=SWIPE.dx, id=+r.dataset.lv, muove=SWIPE.muove;
     SWIPE=null;
     r.classList.add("torna"); r.style.transform="";
     if(!muove) return;
@@ -6918,7 +7029,7 @@ function ambSalva(){
   c.amb.push(a); nota("Aggiunto l'ambiente "+n+"."); salva(); chiudiModale(); S.amb=a.id; render(); toast("Ambiente creato");
 }
 function ambModifica(id){
-  const c=stato(S.can), a=c.amb.find(x=>x.id===id);
+  const c=stato(S.can), a=c.amb.find(x=>x.id===id); if(!a) return;
   modale("Modifica ambiente",esc(a.nome),
    '<div class="cfield"><label>Nome</label><input id="ca-an" value="'+esc(a.nome)+'"></div>'+
    '<div class="cfield"><label>Superficie</label><input id="ca-amq" value="'+esc(a.mq||"")+'"></div>'+
@@ -6927,7 +7038,7 @@ function ambModifica(id){
    '<button class="cbtn dan" onclick="CA.ambElimina(\''+id+'\')">Elimina l\'ambiente</button>');
 }
 function ambAgg(id){
-  const c=stato(S.can), a=c.amb.find(x=>x.id===id);
+  const c=stato(S.can), a=c.amb.find(x=>x.id===id); if(!a) return;
   a.nome=(el("ca-an").value||"").trim()||a.nome; a.mq=(el("ca-amq").value||"").trim(); a.h=(el("ca-ah").value||"").trim(); a.agg=oggi();
   nota("Modificato l'ambiente "+a.nome+"."); salva(); chiudiModale(); render();
 }
@@ -7334,18 +7445,18 @@ function noteFoto2(l){
     '<span class="m"><span class="t">'+esc(m.txt||"senza testo")+'</span></span>'+quando(m.q)+'</div>'; }).join("")+'</div>';
 }
 
-return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:function(){S.filtro=null;S.can=null;render();},
+return {render:render,apri:apri,home:home,indietro:indietro,daCliente:daCliente,tuttiCantieri:function(){S.filtro=null;S.can=null;render();},
  altriCantieri:function(){ S.tuttiCan=!S.tuttiCan; render(); },tab:tab,sel:sel,chiudi:chiudi,mest:mest,cat:cat,azzeraFiltri:azzeraFiltri,catDia:catDia,
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
  tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,vaiElenco:vaiElenco,vaiScrivania:vaiScrivania,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,fotoMestiere:fotoMestiere,fotoCrea:fotoCrea,pulisciFoto:pulisciFoto,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
- carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
+ carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavProponi:tavProponi,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
  card:card,lingua:lingua,copiaTesto:copiaTesto,copiaFoto:copiaFoto,schedaPdf:schedaPdf,anteprima:anteprima,salvaSuDrive:salvaSuDrive,
  esportaPianta:esportaPianta,report:report,stampaReport:stampaReport,salvaReportDrive:salvaReportDrive,zoom:zoom,chiudiModale:chiudiModale,chiudiPop:chiudiPop,ripristina:ripristina,
- ambNuovo:ambNuovo,ambSalva:ambSalva,ambApri:ambApri,ambChiudi:ambChiudi,ambModifica:ambModifica,ambAgg:ambAgg,ambElimina:ambElimina,
+ ambNuovo:ambNuovo,ambSalva:ambSalva,ambScegli:ambScegli,ambApri:ambApri,ambChiudi:ambChiudi,ambModifica:ambModifica,ambAgg:ambAgg,ambElimina:ambElimina,
  tavCarica:tavCarica,tavApri:tavApri,puntoSalva:puntoSalva,puntoApri:puntoApri,puntoAgg:puntoAgg,puntoElimina:puntoElimina,
  prodNuovo:prodNuovo,prodSalva:prodSalva,prodApri:prodApri,prodStato:prodStato,prodModifica:prodModifica,prodAgg:prodAgg,prodElimina:prodElimina,modo:modo,modoLinea:modoLinea,fineLinea:fineLinea,colore:colore,annullaTratto:annullaTratto,puliscTratti:puliscTratti,fotoApri:fotoApri,vaiA:function(id){apri(id);}};
 })();
@@ -7361,6 +7472,40 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
   }
   if(r.v==='can'){ try{ CA.ripristina(r); }catch(e){} }
   try{ setView(r.v); render(); }catch(e){}
+})();
+
+/* Il tasto indietro del telefono deve tornare indietro dentro l'app,
+   non chiuderla. Tengo sempre un gradino in piu' nella cronologia:
+   quando il telefono lo toglie, chiudo io la cosa piu' interna che e' aperta
+   e rimetto il gradino. Solo quando non c'e' piu' niente da chiudere
+   lascio passare l'uscita. */
+(function(){
+  function gradino(){ try{ history.pushState({sozzo:1}, ""); }catch(e){} }
+  function unPassoIndietro(){
+    /* dal piu' interno al piu' esterno */
+    try{
+      var m=document.getElementById("can-modal");
+      if(m && m.style.display!=="none" && m.innerHTML){ CA.chiudiModale(); return true; }
+    }catch(e){}
+    try{
+      var mo=document.getElementById("modale");
+      if(mo){ mo.remove(); return true; }
+    }catch(e){}
+    try{
+      var hm=document.getElementById("home-modal");
+      if(hm && hm.style.display!=="none" && hm.innerHTML){ chiudiModaleHome(); return true; }
+    }catch(e){}
+    try{ if(CA.indietro && CA.indietro()) return true; }catch(e){}
+    try{
+      if(document.body.getAttribute("data-vista")!=="home"){ setView("home"); render(); window.scrollTo(0,0); return true; }
+    }catch(e){}
+    return false;
+  }
+  gradino();
+  window.addEventListener("popstate", function(){
+    if(unPassoIndietro()) gradino();
+    /* se non c'era niente da chiudere il passo va avanti e l'app si chiude */
+  });
 })();
 
 </script>
