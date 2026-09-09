@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1603";</script>
+<script>window.VERSIONE="v20260909-1619";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -170,16 +170,29 @@
 
   var tok=null, scade=0, tc=null, inCorso=null;
 
+  /* il gettone resta anche se chiudi e riapri l'app, cosi' non ti chiede
+     ogni volta di scegliere l'account. Vale finche' Google non lo scade. */
   try{
-    var v=JSON.parse(sessionStorage.getItem('gtok')||'null');
+    var v=JSON.parse(localStorage.getItem('gtok')||sessionStorage.getItem('gtok')||'null');
     if(v && v.s>Date.now()){ tok=v.t; scade=v.s; }
   }catch(e){}
 
   function tieni(t, durata){
     tok=t; scade=Date.now()+((durata||3500)*1000)-90000;
-    try{ sessionStorage.setItem('gtok', JSON.stringify({t:tok,s:scade})); }catch(e){}
+    try{ localStorage.setItem('gtok', JSON.stringify({t:tok,s:scade})); }catch(e){}
   }
-  function butta(){ tok=null; scade=0; try{ sessionStorage.removeItem('gtok'); }catch(e){} }
+  function butta(){ tok=null; scade=0;
+    try{ localStorage.removeItem('gtok'); }catch(e){}
+    try{ sessionStorage.removeItem('gtok'); }catch(e){} }
+  /* l'indirizzo lo prendo da chi e' gia' entrato con Google in questa app,
+     cosi' non sta scritto nel codice e Google non chiede piu' quale account e' */
+  function chiSei(){
+    try{ var u=firebase.auth().currentUser; if(u && u.email) return u.email; }catch(e){}
+    try{ return localStorage.getItem('gmail-mio')||''; }catch(e){ return ''; }
+  }
+  try{
+    setTimeout(function(){ var m=chiSei(); if(m) try{ localStorage.setItem('gmail-mio', m); }catch(e){} }, 4000);
+  }catch(e){}
   function gisPronto(){ return !!(window.google && window.google.accounts && window.google.accounts.oauth2); }
 
   function gettone(interattivo){
@@ -193,9 +206,10 @@
           setTimeout(aspetta, 250); return;
         }
         if(!tc){
-          tc = window.google.accounts.oauth2.initTokenClient({
-            client_id: CLIENTE_ID, scope: AMBITI, callback: function(){}
-          });
+          var conf = { client_id: CLIENTE_ID, scope: AMBITI, callback: function(){} };
+          var mio = chiSei();
+          if(mio){ conf.login_hint = mio; conf.hint = mio; }
+          tc = window.google.accounts.oauth2.initTokenClient(conf);
         }
         tc.callback = function(r){
           inCorso=null;
@@ -4366,6 +4380,7 @@ setView('home'); render();
   #view-can .csub2 button{flex:none;padding:11px 16px;font-size:14px;}
   #view-can .cbarra.due{grid-template-columns:repeat(2,1fr);}
   #view-can .cbarra.tre{grid-template-columns:repeat(3,1fr);}
+#view-can .cbarra.due{grid-template-columns:repeat(2,1fr);}
   /* dentro un cantiere, sul telefono, la testata si stringe */
   body.cantiereaperto .views{display:none;}
   body.cantiereaperto .top{padding:6px 0 6px;border-bottom:0;}
@@ -4379,6 +4394,10 @@ setView('home'); render();
   #view-can .ctop .cscriv{margin-left:auto;background:var(--surface);color:var(--ink-soft);
     border:1px solid var(--line-strong);}
   #view-can .zb .zpieno{font-size:20px;}
+  /* sul telefono lo zoom sta a sinistra, cosi' non copre la parte utile */
+  #view-can .zb{left:10px;right:auto;}
+  #view-can .plente{left:auto;right:10px;}
+  #view-can .plente.destra{left:10px;right:auto;}
   #view-can .cbarra{position:fixed;left:0;right:0;bottom:0;z-index:140;display:grid;grid-template-columns:repeat(4,1fr);
     gap:7px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(251,253,255,.97);
     border-top:1px solid var(--cline2);box-shadow:0 -4px 18px rgba(10,30,50,.14);}
@@ -4983,10 +5002,9 @@ function tel(){ return window.innerWidth<=760; }
 function barraTel(){
   if(!S.can||S.sub==="foto"||S.full) return '';
   /* tre tasti fissi: scattare, segnare un punto, saltare all'elenco */
-  return '<div class="cbarra tre">'+
+  return '<div class="cbarra due">'+
     '<button class="pri" onclick="CA.sceltaFoto()"><b>&#128247;</b>Foto</button>'+
-    '<button onclick="CA.pinModo()"><b>&#128205;</b>Pin</button>'+
-    '<button onclick="CA.vaiElenco()"><b>&#9776;</b>Elenco</button></div>';
+    '<button onclick="CA.pinModo()"><b>&#128205;</b>Pin</button></div>';
 }
 function pieno(v){ S.full=!!v; if(S.full){ S.sel=null; S.sub="pianta"; } else { S.rot=false; } render(); }
 function ruota(){ S.rot=!S.rot; render(); }
@@ -5091,10 +5109,8 @@ function vistaPianta(c){
   const scelta = "";
   const strisciaTav = p ? barraTavole(c, p, lav) : "";
   const piano = p ? '<div class="cpiano">'+
-      (S.pos?'<div class="ctap" id="ca-tap">Tocca il punto dove sta la lavorazione '+c.lav.find(x=>x.id===S.pos).n+'</div>':
-       '<div class="ctap" id="ca-tap">'+(tel()
-         ?'Tocca la pianta per attivarla. Con il dito la pagina scende.'
-         :'Tocca la pianta per aggiungere un pin. Pizzica per ingrandire.')+'</div>')+
+      (S.pos?'<div class="ctap" id="ca-tap">Tocca il punto dove sta la lavorazione '+c.lav.find(x=>x.id===S.pos).n+'</div>'
+        :(tel()?'':'<div class="ctap" id="ca-tap">Tocca la pianta per aggiungere un pin. Pizzica per ingrandire.</div>'))+
       vista(livello(p)+pins(acc,spe),p.ar||800/560)+
       strisciaTav+
       '<div class="cleg">'+legendaMest(acc.map(l=>l.cat))+'</div></div>'
@@ -5153,7 +5169,7 @@ function vistaPianta(c){
   if(tel()){
     if(S.sel) return '<div class="ctelback"><button class="cbtn" onclick="CA.chiudi()">&lsaquo; Torna alla pianta</button></div>'+scheda(S.sel);
     /* ordine sul telefono: pianta, lavorazioni, mestieri, il resto */
-    return piano+ ditteSopra + bloccoDec + tendLav + tendMest + tendPianta;
+    return piano+ ditteSopra + bloccoDec + tendMest + tendLav + tendPianta;
   }
   return '<div class="c2"><div class="ccol">'+piano+
     (p?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+
@@ -6453,6 +6469,15 @@ function suDrive(mid, lista){
   const p=prat(S.can);
   const cliente=(p&&p.cliente)||S.can;
   if(!window.MCP) return;
+  /* se Google non e' gia' collegato non apro la finestra dell'account mentre
+     stai lavorando: metto le foto in coda e partono da sole al prossimo giro */
+  try{
+    if(window.MCPGOOGLE && !window.MCPGOOGLE.collegato()){
+      inCoda(mid, cliente, lista);
+      toast("Foto salvate nell'app. Vanno su Drive appena ricolleghi Google.");
+      return;
+    }
+  }catch(e){}
   toast("Archivio "+lista.length+" foto in Cantiere, "+m.l+"…");
   const stampa=new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
   window.cartellaCliente(cliente)
@@ -6477,6 +6502,47 @@ function suDrive(mid, lista){
     })
     .catch(function(){ toast("Non sono riuscito ad archiviare su Drive"); });
 }
+/* la coda delle foto che aspettano Drive */
+function leggiCoda(){ try{ return JSON.parse(localStorage.getItem("ca-coda")||"[]"); }catch(e){ return []; } }
+function scriviCoda(v){ try{ localStorage.setItem("ca-coda", JSON.stringify(v)); }catch(e){} }
+function inCoda(mid, cliente, lista){
+  const q=leggiCoda();
+  q.push({mid:mid, cliente:cliente, can:S.can, q:Date.now(),
+    foto:lista.map(function(f){ return {src:f.src}; })});
+  /* non tengo piu' di venti gruppi, altrimenti riempio la memoria del telefono */
+  while(q.length>20) q.shift();
+  scriviCoda(q);
+}
+function svuotaCoda(){
+  const q=leggiCoda(); if(!q.length) return;
+  if(!window.MCP) return;
+  try{ if(window.MCPGOOGLE && !window.MCPGOOGLE.collegato()) return; }catch(e){ return; }
+  const g=q[0];
+  const m=MEST.find(function(x){ return x.id===g.mid; }) || MEST[0];
+  const stampa=new Date(g.q||Date.now()).toISOString().slice(0,16).replace('T','_').replace(':','');
+  window.cartellaCliente(g.cliente)
+    .then(function(cart){ return cartellaDentro('Cantiere', cart.id); })
+    .then(function(idCan){ if(!idCan) throw {code:'tool_error'}; return cartellaDentro(m.l, idCan); })
+    .then(function(idM){
+      if(!idM) throw {code:'tool_error'};
+      let i=0;
+      const uno=function(){
+        if(i>=g.foto.length) return Promise.resolve();
+        const f=g.foto[i++];
+        return window.MCP.callTool('Google Drive','create_file',{
+          title:'cantiere_'+m.id+'_'+stampa+'_'+i+'.jpg', parentId:idM, dataUrl:f.src
+        }).then(uno);
+      };
+      return uno();
+    })
+    .then(function(){
+      const r=leggiCoda(); r.shift(); scriviCoda(r);
+      toast(g.foto.length+" foto arretrate archiviate su Drive");
+      setTimeout(svuotaCoda, 1500);
+    })
+    .catch(function(){});
+}
+window.svuotaCoda=svuotaCoda;
 function pulisciFoto(){
   const c=stato(S.can);
   const via=c.lav.filter(soloFoto);
@@ -6982,7 +7048,7 @@ function vista(dentro,ar){
   const r=ar||800/560;
   return '<div class="pview" id="ca-pv" style="aspect-ratio:'+r+';max-width:calc(var(--hpian,60vh) * '+r+');margin:0 auto">'+
    '<div class="pcv" id="ca-cv" style="--k:1">'+dentro+'</div>'+
-   '<div class="zb"><span class="lvl" id="ca-lvl">100%</span>'+
+   '<div class="zb"><button class="lvl" id="ca-lvl" onclick="CA.bloccaPianta()" title="Rimetti la pianta a posto">100%</button>'+
    '<button onclick="CA.zoom(-1)">&minus;</button><button onclick="CA.zoom(1)">+</button>'+
    (tel()&&!S.full?'<button class="zpieno" onclick="CA.pieno(true)" title="Pianta a schermo intero">&#9974;</button>':'')+
    '</div></div>';
@@ -6992,22 +7058,13 @@ function applica(){ const cv=el("ca-cv"),vw=el("ca-pv"); if(!cv||!vw) return;
   Z.k=Math.min(8,Math.max(1,Z.k)); Z.x=Math.min(0,Math.max(-(Z.k-1)*w,Z.x)); Z.y=Math.min(0,Math.max(-(Z.k-1)*h,Z.y));
   cv.style.transform="translate("+Z.x+"px,"+Z.y+"px) scale("+Z.k+")"; cv.style.setProperty("--k",Z.k);
   const l=el("ca-lvl"); if(l) l.textContent=Math.round(Z.k*100)+"%";
-  /* finche' la pianta non e' stata attivata con un tocco, il dito fa scendere la pagina */
-  try{ vw.classList.toggle("scorri", tel() && !ATTIVA && !S.full && !S.dis); }catch(e){} }
+  /* il dito fa scendere la pagina, finche' non ingrandisci o non stai mirando:
+     allora la pianta si prende il dito, e il tasto 100% la rimette a posto */
+  try{ vw.classList.toggle("scorri", tel() && !S.full && !S.dis && !MIRA && Z.k<=1.01); }catch(e){} }
 /* la pianta sul telefono parte bloccata: un tocco la attiva, il tasto la blocca */
 var ATTIVA=false;
-function pianoAttivo(v){
-  ATTIVA=!!v;
-  const vw=el("ca-pv");
-  const b=el("ca-tap");
-  if(b && tel() && !S.full && !S.dis && !S.pos && S.sub==="pianta"){
-    b.innerHTML = ATTIVA
-      ? 'Pianta attiva. Pizzica per ingrandire, tocca per mettere un pin. <button class="ctapb" onclick="CA.bloccaPianta()">Blocca e scorri</button>'
-      : 'Tocca la pianta per attivarla. Con il dito la pagina scende.';
-  }
-  if(vw) applica();
-}
-function bloccaPianta(){ Z={k:1,x:0,y:0}; pianoAttivo(false); }
+function pianoAttivo(v){ ATTIVA=!!v; if(el("ca-pv")) applica(); }
+function bloccaPianta(){ Z={k:1,x:0,y:0}; MIRA=null; disegnaMira(); applica(); }
 function zoomVerso(k2,px,py){ const k1=Z.k; k2=Math.min(8,Math.max(1,k2));
   Z.x=px-(px-Z.x)*(k2/k1); Z.y=py-(py-Z.y)*(k2/k1); Z.k=k2; applica(); }
 function coord(cx,cy){ const vw=el("ca-pv"),r=vw.getBoundingClientRect();
@@ -7193,19 +7250,19 @@ function attacca(){
     const suiTasti = !!(e.target && e.target.closest && (e.target.closest(".zb") || e.target.closest("button")));
     if(suiTasti){ st=null; mosso=false; return; }
     const tap=st&&!mosso&&Date.now()-st.t<700;
-    /* primo tocco sul telefono: attiva la pianta, non mette il pin */
-    if(tap && tel() && !ATTIVA && !S.full && !S.dis){
-      st=null; mosso=false; pianoAttivo(true);
-      toast("Pianta attiva. Ora pizzica per ingrandire.");
-      return;
-    }
     if(tap){ const ora=Date.now();
-      if(ora-tl<300){ tl=0; togliMira(); const r=vw.getBoundingClientRect(); zoomVerso(Z.k>1.5?1:2.6,e.clientX-r.left,e.clientY-r.top); }
-      else if(usaMira()){
-        tl=ora;
-        if(!(e.target.closest && e.target.closest(".pin")) || MIRA) mettiMira(e.clientX,e.clientY);
+      const doppio=(ora-tl<340);
+      tl = doppio ? 0 : ora;
+      const suUnPin = !!(e.target.closest && e.target.closest(".pin"));
+      if(usaMira()){
+        /* sul telefono il doppio tocco entra nella pianta e mette il mirino,
+           il tocco singolo lascia scorrere la pagina */
+        /* quando stai posizionando una lavorazione basta un tocco solo */
+        if(!suUnPin && (doppio || S.pos || MIRA)) mettiMira(e.clientX,e.clientY);
       }
-      else { tl=ora; setTimeout(()=>{ if(tl!==ora) return; if(e.target.closest(".pin")) return; tocca(e.clientX,e.clientY); },300); } }
+      else if(doppio){ togliMira(); const r=vw.getBoundingClientRect();
+        zoomVerso(Z.k>1.5?1:2.6,e.clientX-r.left,e.clientY-r.top); }
+      else { setTimeout(()=>{ if(tl!==ora) return; if(suUnPin) return; tocca(e.clientX,e.clientY); },340); } }
     st=null; mosso=false; applica(); });
   vw.addEventListener("pointercancel",e=>{ pts.delete(e.pointerId); st=null; mosso=false; if(!pts.size) applica(); });
   /* rotella: ingrandisce solo tenendo premuto Ctrl, altrimenti la pagina scorre */
@@ -7736,6 +7793,17 @@ return {render:render,apri:apri,home:home,indietro:indietro,daCliente:daCliente,
   }
   if(r.v==='can'){ try{ CA.ripristina(r); }catch(e){} }
   try{ setView(r.v); render(); }catch(e){}
+})();
+
+/* le foto rimaste in coda partono da sole quando Google e' collegato */
+(function(){
+  var giri=0;
+  var t=setInterval(function(){
+    giri++;
+    if(giri>40){ clearInterval(t); return; }
+    try{ if(window.svuotaCoda) window.svuotaCoda(); }catch(e){}
+  }, 45000);
+  setTimeout(function(){ try{ if(window.svuotaCoda) window.svuotaCoda(); }catch(e){} }, 9000);
 })();
 
 /* Il tasto indietro del telefono deve tornare indietro dentro l'app,
