@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1322";</script>
+<script>window.VERSIONE="v20260909-1339";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -771,6 +771,12 @@
     background:var(--surface);border:1px solid var(--line-strong);color:var(--muted);
     font-size:12px;line-height:1;display:grid;place-items:center;z-index:2;}
   .catx:hover{border-color:var(--u1);color:var(--u1);}
+  /* fila dei tipi di lavoro, per vedere solo i clienti di quel tipo */
+  .catfil{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:10px 0 4px;}
+  .catfil .catbtn{font-size:13px;padding:7px 13px;cursor:pointer;}
+  .catfil .catx{position:static;width:auto;height:auto;border-radius:999px;padding:6px 12px;
+    font-family:var(--f);font-size:12.5px;font-weight:600;}
+  .catfiltop{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);}
   /* finestra */
   .modale{position:fixed;inset:0;background:rgba(10,25,40,.45);display:flex;align-items:flex-start;
     justify-content:center;padding:5vh 16px;z-index:120;overflow-y:auto;}
@@ -1047,7 +1053,11 @@
   .u4{color:var(--u4s);border-color:var(--u4);} .u4[aria-pressed="true"]{background:var(--u4s);border-color:var(--u4s);color:#fff;}
   .form{max-width:760px;}
   .form .fl{display:block;font-family:var(--m);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:22px 0 9px;}
-  .form input,.form textarea{width:100%;font:inherit;font-size:14.5px;padding:10px 13px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);color:var(--ink);}
+  .form input,.form textarea,.form select{width:100%;font:inherit;font-size:14.5px;padding:10px 13px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);color:var(--ink);}
+  /* il bordo di quando scrivi resta dentro, cosi' non mangia i margini */
+  .form input:focus,.form textarea:focus,.form select:focus{outline:2px solid var(--accent);outline-offset:-2px;}
+  .form .due{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:620px){ .form .due{grid-template-columns:1fr;} }
   .form .wrapg{display:flex;gap:9px;flex-wrap:wrap;}
   .preview{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:16px 18px;margin-top:26px;}
   .preview .k{font-family:var(--m);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
@@ -1080,8 +1090,9 @@
       <button role="tab" data-view="rub" aria-selected="false">Rubrica</button>
       <button role="tab" data-view="ord" aria-selected="false">Ordini</button>
       <button role="tab" data-view="age" aria-selected="false">Agenda</button>
-      <button id="newbtn" class="newbtn">+ Nuovo contatto</button>
+      <button id="newbtn" class="newbtn">+ Nuovo cliente</button>
     </div>
+    <div class="catfil catfiltop" id="catfiltop"></div>
   </div>
 
   <div id="view-home"></div>
@@ -2465,22 +2476,60 @@ function innestaNuove(){
   NUOVE.forEach(function(p){
     if(!p.cliente || cn.has(norm(p.cliente))) return;
     cn.add(norm(p.cliente));
-    DATA.clienti.push({n:String(DATA.clienti.length+1), cliente:p.cliente, email:'', cartella:'',
-      immobile:p.immobile||'', categoria:p.cat||'', lingua:'IT',
+    DATA.clienti.push({n:String(DATA.clienti.length+1), cliente:p.cliente, email:p.email||'',
+      tel:p.tel||'', cartella:'',
+      immobile:p.immobile||'', categoria:p.cat||'', lingua:p.lingua||'IT',
       primo:p.creata||oggiISO(), ultimo:p.creata||oggiISO(), stato:'', fase:'', azione:'', scadenza:'', note:''});
   });
 }
 window.preparaTutto = function(){ try{ innestaNuove(); preparaPratiche(); preparaClienti(); }catch(e){} };
 
+/* filtro per tipo di lavoro: vale sia sulle categorie assegnate al cliente
+   sia su quelle delle sue pratiche */
+function clienteHaCat(c,k){
+  if(!k) return true;
+  try{ if(catAttiva(c.cliente,k)) return true; }catch(e){}
+  return (c._prat||[]).some(function(p){ return (p._cats||[]).indexOf(k)>=0; });
+}
+function contaCat(k){ return DATA.clienti.filter(function(c){ return clienteHaCat(c,k); }).length; }
+function filtroCat(k){
+  state.catf = (state.catf===k) ? null : k;
+  state.csel=null; setView('cli'); render(); scrollTop0();
+}
+function barraFiltroCat(){
+  return '<div class="catfil">'+CATLAV.map(function(x){
+    const n=contaCat(x.k), on=state.catf===x.k;
+    return '<button class="catbtn c-'+x.k+' '+(on?'pieno':'spento')+'" data-catf="'+x.k+'" '+
+      'title="'+esc(x.n)+', '+n+' clienti">'+esc(x.n)+'<span class="cn">'+n+'</span></button>';
+  }).join('')+
+  (state.catf?'<button class="catx" data-catf="" title="togli il filtro">togli il filtro</button>':'')+
+  '</div>';
+}
+function disegnaFiltroTop(){
+  const t=document.getElementById('catfiltop'); if(!t) return;
+  t.innerHTML=CATLAV.map(function(x){
+    const n=contaCat(x.k), on=state.catf===x.k;
+    return '<button class="catbtn c-'+x.k+' '+(on?'pieno':'spento')+'" data-catf="'+x.k+'" '+
+      'title="'+esc(x.n)+', '+n+' clienti">'+esc(x.n)+'<span class="cn">'+n+'</span></button>';
+  }).join('')+(state.catf?'<button class="catx" data-catf="" title="togli il filtro">togli il filtro</button>':'');
+  agganciaFiltroCat(t);
+}
+function agganciaFiltroCat(dove){
+  [...(dove||document).querySelectorAll('[data-catf]')].forEach(function(b){
+    b.onclick=function(){ filtroCat(b.dataset.catf||null); };
+  });
+}
 function renderCli(){
   ricalcolaUrgenze();
   const list = DATA.clienti.filter(c=>{
+    if(!clienteHaCat(c, state.catf)) return false;
     if(!state.q) return true;
     return [c.cliente,c.immobile,c.categoria,c.email,c.note].join(' ').toLowerCase().includes(state.q);
   }).sort((a,b)=> a._prio-b._prio || ((b._mod?1:0)-(a._mod?1:0)) || b._prat.length - a._prat.length || a.cliente.localeCompare(b.cliente));
   const en = DATA.clienti.filter(c=>c.lingua==='EN').length;
   document.getElementById('view-cli').innerHTML = `
-    <h2 class="sec">${list.length} clienti su ${DATA.clienti.length} · ${en} di lingua inglese</h2>
+    <h2 class="sec">${list.length} client${list.length===1?'e':'i'}${state.catf?' per '+esc((CATLAVMAP[state.catf]||{}).n||state.catf):' su '+DATA.clienti.length+' · '+en+' di lingua inglese'}</h2>
+    ${barraFiltroCat()}
     <div class="split">
       <div class="rows" id="clist">${list.map(c=>`
         <button class="row" style="grid-template-columns:auto 1fr auto" aria-current="${state.csel===c._i}" data-c="${c._i}">
@@ -2496,6 +2545,7 @@ function renderCli(){
       <div class="detail" id="cdetail"></div>
     </div>`;
   [...document.querySelectorAll('#clist .row')].forEach(b=>b.onclick=()=>{state.csel=+b.dataset.c;state.urgTmp=null;renderCli();});
+  agganciaFiltroCat(document.getElementById('view-cli'));
   renderCliDetail();
 }
 
@@ -3393,7 +3443,8 @@ function renderAge(){
 const MOTIVI=[['CAT','Catasto','--c-cat'],['URB','Urbanistica','--c-urb'],['DD','Due diligence','--c-dd'],
   ['RIL','Rilievo architettonico','--c-ril'],['CON','Consulenza','--c-sop'],['CAN','Cantiere','--c-can'],['ALT','Altro','']];
 const URG=[['1','Urgente','u1'],['2','Da fare a breve','u2'],['3','Normale','u3'],['4','Quando capita','u4']];
-const nuovo={motivi:new Set(), urg:'3', nome:'', comune:'', note:''};
+const nuovo={motivi:new Set(), urg:'3', nome:'', comune:'', note:'',
+  email:'', tel:'', lingua:'IT', indirizzo:''};
 function salvaNuove(){
   try{ localStorage.setItem('urg-nuove', JSON.stringify(NUOVE)); }catch(e){}
   if(DB){ ECO['stato/nuove']=Date.now(); DB.doc('stato/nuove').set({v:NUOVE}).catch(()=>{}); }
@@ -3431,7 +3482,11 @@ function creaContatto(){
       id:String(num),
       codice:'2026-'+String(num).padStart(3,'0')+'_'+(com||'COMUNE').toUpperCase().replace(/\s+/g,'')+'_'+k,
       cartella:'** CARTELLA DA CREARE **',
-      cliente:nome, immobile:com, cat:k,
+      cliente:nome, immobile:(String(nuovo.indirizzo||'').trim()
+        ? (com?com+', '+String(nuovo.indirizzo).trim():String(nuovo.indirizzo).trim())
+        : com), cat:k,
+      email:String(nuovo.email||'').trim(), tel:String(nuovo.tel||'').trim(),
+      lingua:nuovo.lingua||'IT',
       dettaglio:(MOTIVI.find(function(m){ return m[0]===k; })||[,''])[1],
       stato:'DA AVVIARE', prio:String(nuovo.urg),
       azione:String(nuovo.note||'').trim(), scadenza:'', ggscad:'',
@@ -3446,6 +3501,7 @@ function creaContatto(){
   salvaNuove();
   try{ window.preparaTutto(); ricalcolaUrgenze(); }catch(e){}
   nuovo.motivi=new Set(); nuovo.urg='3'; nuovo.nome=''; nuovo.comune=''; nuovo.note='';
+  nuovo.email=''; nuovo.tel=''; nuovo.lingua='IT'; nuovo.indirizzo='';
   toast(fatte.length>1?(fatte.length+' pratiche create per '+nome):('Pratica '+fatte[0].codice+' creata'));
   const cl=DATA.clienti.find(function(c){ return norm(c.cliente)===norm(nome); });
   state.csel = cl ? cl._i : null;
@@ -3454,7 +3510,7 @@ function creaContatto(){
 function renderNew(){
   const V=document.getElementById('view-new');
   V.innerHTML=`
-    <h2 class="sec">Nuovo contatto</h2>
+    <h2 class="sec">Nuovo cliente</h2>
     <div class="form">
       <span class="fl">Per cosa ti hanno contattato</span>
       <div class="wrapg" id="gmot">${MOTIVI.map(([k,n,v])=>`<button class="big-chip" aria-pressed="${nuovo.motivi.has(k)}">${v?`<i class="dot" style="background:var(${v})"></i>`:''}${n}</button>`).join('')}</div>
@@ -3465,25 +3521,42 @@ function renderNew(){
 
       <span class="fl">Cliente</span>
       <input id="nnome" value="${esc(nuovo.nome)}" placeholder="Cognome Nome, oppure ragione sociale">
-      <span class="fl">Comune dell'immobile</span>
-      <input id="ncom" value="${esc(nuovo.comune)}" placeholder="Lecce, Squinzano, Melendugno...">
+      <div class="due">
+        <div><span class="fl" style="margin-top:16px">Email</span>
+          <input id="nmail" type="email" value="${esc(nuovo.email)}" placeholder="nome@dominio.it"></div>
+        <div><span class="fl" style="margin-top:16px">Telefono</span>
+          <input id="ntel" value="${esc(nuovo.tel)}" placeholder="+39 ..."></div>
+      </div>
+      <div class="due">
+        <div><span class="fl" style="margin-top:16px">Comune dell'immobile</span>
+          <input id="ncom" value="${esc(nuovo.comune)}" placeholder="Lecce, Squinzano, Melendugno..."></div>
+        <div><span class="fl" style="margin-top:16px">Lingua</span>
+          <select id="nling">
+            <option value="IT" ${nuovo.lingua==='IT'?'selected':''}>Italiano</option>
+            <option value="EN" ${nuovo.lingua==='EN'?'selected':''}>Inglese</option>
+          </select></div>
+      </div>
+      <span class="fl">Indirizzo dell'immobile</span>
+      <input id="nind" value="${esc(nuovo.indirizzo)}" placeholder="Via, numero civico, foglio e particella">
       <span class="fl">Cosa ha chiesto</span>
       <textarea id="nnote" rows="3" placeholder="Due righe, anche buttate giù male">${esc(nuovo.note)}</textarea>
 
       <div class="preview" id="nprev">${anteprimaNuovo()}</div>
       <div class="wrapg" style="margin-top:18px">
-        <button class="u-chip u3" id="ncrea" style="background:var(--accent);border-color:var(--accent);color:var(--on-accent)">Crea</button>
+        <button class="u-chip u3" id="ncrea" style="background:var(--accent);border-color:var(--accent);color:var(--on-accent)">Crea il cliente</button>
       </div>
-      <p style="font-size:13px;color:var(--muted);margin-top:10px">La pratica viene salvata subito e la trovi in Pratiche e in Clienti. La cartella sul computer e l'etichetta Gmail restano da fare a mano.</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:10px">Il cliente e le sue pratiche vengono salvati subito e li trovi in Clienti e in Pratiche. La cartella sul computer e l'etichetta Gmail restano da fare a mano.</p>
     </div>`;
   V.querySelector('#ncrea').onclick=creaContatto;
   [...V.querySelectorAll('#gmot button')].forEach((b,i)=>b.onclick=()=>{
     const k=MOTIVI[i][0]; nuovo.motivi.has(k)?nuovo.motivi.delete(k):nuovo.motivi.add(k); renderNew();});
   [...V.querySelectorAll('#gurg button')].forEach((b,i)=>b.onclick=()=>{nuovo.urg=URG[i][0];renderNew();});
   /* niente ridisegno mentre scrivi: aggiorno solo il riquadro di riepilogo */
-  ['nnome','ncom','nnote'].forEach((id,i)=>{
-    const el=V.querySelector('#'+id);
-    el.oninput=e=>{ nuovo[['nome','comune','note'][i]]=e.target.value; aggiornaAnteprima(); };
+  [['nnome','nome'],['nmail','email'],['ntel','tel'],['ncom','comune'],
+   ['nind','indirizzo'],['nnote','note'],['nling','lingua']].forEach(([id,k])=>{
+    const el=V.querySelector('#'+id); if(!el) return;
+    const leggi=e=>{ nuovo[k]=e.target.value; aggiornaAnteprima(); };
+    el.oninput=leggi; el.onchange=leggi;
   });
 }
 
@@ -3495,6 +3568,7 @@ function setView(v){
   [...document.querySelectorAll('.views button[data-view]')].forEach(b=>b.setAttribute('aria-selected', b.dataset.view===v));
 }
 function render(){
+  disegnaFiltroTop();
   if(state.view==='home') renderHome();
   if(state.view==='prat'){ buildFilters(); renderList(); }
   if(state.view==='cli') renderCli();
