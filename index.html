@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1339";</script>
+<script>window.VERSIONE="v20260909-1355";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -276,6 +276,19 @@
   function creaFile(a){
     var meta={name:a.title, mimeType:a.contentMimeType||'application/octet-stream'};
     if(a.parentId) meta.parents=[a.parentId];
+    /* immagine: arriva come data:image/...;base64,... */
+    if(a.dataUrl){
+      var virgola=String(a.dataUrl).indexOf(',');
+      var testa=String(a.dataUrl).slice(5, virgola).replace(';base64','');
+      var dati=String(a.dataUrl).slice(virgola+1);
+      meta.mimeType=testa||'image/jpeg';
+      var bb='sozzo'+Date.now()+Math.random().toString(36).slice(2);
+      var c2='--'+bb+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+
+        '\r\n--'+bb+'\r\nContent-Type: '+meta.mimeType+'\r\nContent-Transfer-Encoding: base64\r\n\r\n'+dati+
+        '\r\n--'+bb+'--';
+      return chiama('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+        {method:'POST', headers:{'Content-Type':'multipart/related; boundary='+bb}, body:c2}).then(vesti);
+    }
     if(meta.mimeType==='application/vnd.google-apps.folder'){
       return chiama('https://www.googleapis.com/drive/v3/files?fields=id,name,webViewLink',
         {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(meta)}).then(vesti);
@@ -773,7 +786,12 @@
   .catx:hover{border-color:var(--u1);color:var(--u1);}
   /* fila dei tipi di lavoro, per vedere solo i clienti di quel tipo */
   .catfil{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:10px 0 4px;}
-  .catfil .catbtn{font-size:13px;padding:7px 13px;cursor:pointer;}
+  .catfil .catbtn{font-size:13px;padding:7px 13px;cursor:pointer;opacity:1;border-style:solid;background:var(--surface);}
+  /* nella fila dei filtri il numero deve leggersi: prima era bianco su bianco */
+  .catfil .catbtn .cn{background:var(--surface-3);color:inherit;font-weight:700;font-size:11px;
+    min-width:19px;height:18px;}
+  .catfil .catbtn.pieno .cn{background:rgba(255,255,255,.3);color:#fff;}
+  .catfil .catbtn.spento:hover{box-shadow:0 0 0 3px var(--surface-3);}
   .catfil .catx{position:static;width:auto;height:auto;border-radius:999px;padding:6px 12px;
     font-family:var(--f);font-size:12.5px;font-weight:600;}
   .catfiltop{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);}
@@ -2321,7 +2339,7 @@ function renderStage(){
     return;
   }
   S.className='stage-main rassegnaview';
-  const tutti=clientiOrdinati().filter(x=>x._ap.length);
+  const tutti=clientiOrdinati().filter(x=>x._ap.length && clienteHaCat(x, state.catf));
   const nascosti=tutti.filter(c=>statoAz(c.cliente));
   const list=tutti.filter(c=>!statoAz(c.cliente));
   const p1=DATA.pratiche.filter(x=>String(x.prio)==='1').length;
@@ -2393,8 +2411,11 @@ function renderStage(){
   S.innerHTML=`
     <div class="stagetop">
     ${testa}
-    <h2 class="sec" style="margin-top:0">${state.calSel?'Clienti di quel giorno · '+shown.length:'Rassegna del giorno · '+shown.length+' clienti in ordine di urgenza'}
+    <h2 class="sec" style="margin-top:0">${state.calSel?'Clienti di quel giorno · '+shown.length
+      :(state.catf?shown.length+' client'+(shown.length===1?'e':'i')+' per '+esc((CATLAVMAP[state.catf]||{}).n||state.catf)
+        :'Rassegna del giorno · '+shown.length+' clienti in ordine di urgenza')}
       <span style="text-transform:none;letter-spacing:0;font-family:var(--f)">
+      ${state.catf?`<button class="act" data-catf="">togli il filtro</button>`:''}
       ${nascosti.length?`· ${nascosti.length} smaltiti oggi <button class="act" id="ripristina">rimetti in lista</button>`:''}
       ${Object.keys(CH).length?`· ${Object.keys(CH).length} chiuse <button class="act" id="vedichiuse">vedi</button>`:''}</span></h2>
     </div>
@@ -2410,6 +2431,7 @@ function renderStage(){
     formChiusura(b.closest('.ccard-foot'), c);
   });
   [...S.querySelectorAll('[data-open]')].forEach(b=>b.onclick=()=>{state.csel=+b.dataset.open;state.vai=null;state.urgTmp=null;renderHome();});
+  agganciaFiltroCat(S);
   [...S.querySelectorAll('.urgscheda')].forEach(bar=>{
     const cl=clienteDiBarra(bar); if(cl) dipingiUrgbar(cl, bar.parentElement);
   });
@@ -2494,7 +2516,10 @@ function clienteHaCat(c,k){
 function contaCat(k){ return DATA.clienti.filter(function(c){ return clienteHaCat(c,k); }).length; }
 function filtroCat(k){
   state.catf = (state.catf===k) ? null : k;
-  state.csel=null; setView('cli'); render(); scrollTop0();
+  state.csel=null;
+  /* il filtro apre prima la scrivania, ma se sei gia' in Clienti resti li' */
+  if(state.view!=='cli' && state.view!=='home') setView('home');
+  render(); scrollTop0();
 }
 function barraFiltroCat(){
   return '<div class="catfil">'+CATLAV.map(function(x){
@@ -3617,6 +3642,7 @@ aggiornaSpiaBackup();
 (async()=>{
   try{
     MCP = window.MCPGOOGLE || await claude.use('mcp');
+    window.MCP = MCP;   /* serve alla parte cantiere, che vive in un altro riquadro */
     aggiornaSpiaBackup();
     if(!MCP) return;
     const collegato = !window.MCPGOOGLE || MCPGOOGLE.collegato();
@@ -5798,22 +5824,85 @@ function leggiTutte(files, fatto){
   })();
 }
 let FOTOATTESA=null;
+/* le voci nate solo da una foto, senza pin e senza descrizione vera */
+function soloFoto(l){
+  return l.tit==="Foto di cantiere" && !l.pin && !(l.nota||"").trim();
+}
 function dovePorto(lista){
   const c=stato(S.can);
   FOTOATTESA=lista;
-  const att=c.lav.filter(function(l){ return l.stato!=="verificata"; })
+  const att=c.lav.filter(function(l){ return l.stato!=="verificata" && !soloFoto(l); })
     .sort(function(a,b){ return String(b.agg||"").localeCompare(String(a.agg||"")); }).slice(0,8);
-  modale(lista.length>1?(lista.length+" foto pronte"):"Foto pronta", "dimmi dove va",
+  const vecchie=c.lav.filter(soloFoto).length;
+  modale(lista.length>1?(lista.length+" foto pronte"):"Foto pronta", "di che mestiere e'?",
+    '<div class="cchips cmest">'+MEST.map(function(m){
+      return '<button class="cchip" onclick="CA.fotoArchivio(\''+m.id+'\')">'+esc(m.l)+'</button>'; }).join("")+'</div>'+
+    '<p class="chint">Va nella cartella del cliente, dentro Cantiere, nella sottocartella del mestiere. Non crea nessuna lavorazione.</p>'+
     (att.length
-      ? '<div class="clist">'+att.map(function(l){
+      ? '<div class="csec">Oppure attaccala a una lavorazione</div><div class="clist">'+att.map(function(l){
           return '<button class="cli" onclick="CA.fotoA('+l.id+')">'+
             '<span class="cnum" style="background:'+CATS[l.cat].c+'">'+l.n+'</span>'+
             '<span class="m"><span class="t">'+esc(l.tit)+'</span>'+
             '<span class="s">'+esc(CATS[l.cat].b)+(l.loc?' &middot; '+esc(l.loc):"")+'</span></span>'+
             '<span class="r"><span class="cchev">&rsaquo;</span></span></button>'; }).join("")+'</div>'
-      : '<p class="chint">In questo cantiere non ci sono ancora lavorazioni aperte.</p>')+
-    '<button class="cbtn pri" style="margin-top:10px" onclick="CA.fotoNuovaDa()">Nuova lavorazione da questa foto</button>'+
+      : '')+
+    '<button class="cbtn" style="margin-top:10px" onclick="CA.fotoNuovaDa()">Nuova lavorazione da questa foto</button>'+
+    (vecchie?'<button class="cbtn dan" onclick="CA.pulisciFoto()">Togli le '+vecchie+' vecchie voci Foto di cantiere</button>':'')+
     '<button class="cbtn" onclick="CA.fotoAnnulla()">Annulla</button>');
+}
+/* archivio su Drive: cartella cliente, poi Cantiere, poi il mestiere */
+function cartellaDentro(nome, padre){
+  return window.MCP.callTool('Google Drive','search_files',{
+      query:"name = '"+String(nome).replace(/'/g,"\\'")+"' and '"+padre+"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      pageSize:3})
+    .then(function(r){
+      const f=((r&&r.payload&&r.payload.files)||[])[0];
+      if(f&&f.id) return f.id;
+      return window.MCP.callTool('Google Drive','create_file',{
+        title:nome, parentId:padre, contentMimeType:'application/vnd.google-apps.folder'})
+        .then(function(r2){ return (r2&&r2.payload&&r2.payload.id)||null; });
+    });
+}
+function fotoArchivio(mid){
+  const lista=FOTOATTESA||[]; FOTOATTESA=null;
+  if(!lista.length){ chiudiModale(); return; }
+  const m=MEST.find(function(x){ return x.id===mid; }) || MEST[0];
+  const c=stato(S.can), p=prat(S.can);
+  const cliente=(p&&p.cliente)||S.can;
+  chiudiModale();
+  if(!window.MCP){ toast("Google Drive non e' collegato, la foto non e' stata archiviata"); return; }
+  toast("Archivio "+lista.length+" foto in Cantiere, "+m.l+"…");
+  const stampa=new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  window.cartellaCliente(cliente)
+    .then(function(cart){ return cartellaDentro('Cantiere', cart.id); })
+    .then(function(idCan){ if(!idCan) throw {code:'tool_error'}; return cartellaDentro(m.l, idCan); })
+    .then(function(idM){
+      if(!idM) throw {code:'tool_error'};
+      let i=0;
+      const uno=function(){
+        if(i>=lista.length) return Promise.resolve();
+        const f=lista[i++];
+        return window.MCP.callTool('Google Drive','create_file',{
+          title:'cantiere_'+m.id+'_'+stampa+'_'+i+'.jpg', parentId:idM, dataUrl:f.src
+        }).then(uno);
+      };
+      return uno();
+    })
+    .then(function(){
+      nota(lista.length+" foto di cantiere archiviate su Drive, cartella Cantiere, "+m.l+".");
+      salva(); render();
+      toast(lista.length+" foto archiviate in Cantiere, "+m.l);
+    })
+    .catch(function(){ toast("Non sono riuscito ad archiviare su Drive"); });
+}
+function pulisciFoto(){
+  const c=stato(S.can);
+  const via=c.lav.filter(soloFoto);
+  if(!via.length){ chiudiModale(); return; }
+  c.lav=c.lav.filter(function(l){ return !soloFoto(l); });
+  nota("Tolte "+via.length+" vecchie voci Foto di cantiere.");
+  S.sel=null; salva(); chiudiModale(); render();
+  toast(via.length+" voci tolte");
 }
 function attaccaFoto(l, lista){
   lista.forEach(function(x){
@@ -6971,7 +7060,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,fotoArchivio:fotoArchivio,pulisciFoto:pulisciFoto,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
  carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
