@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1157";</script>
+<script>window.VERSIONE="v20260909-1209";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -4464,6 +4464,27 @@ function vistaPianta(c){
     '</div></div>'+
     '<div class="clavgiu"><div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'+elencoLav+'</div>';
 }
+/* i tasti della scheda: sul telefono stanno dentro una tendina,
+   fuori restano solo la foto e l'avanzamento */
+function azioniScheda(l, id, acts){
+  const dentro =
+    acts+
+    '<div class="cbtn2"><button class="cbtn" onclick="CA.modifica('+id+')">Modifica</button>'+
+    campoScatto("Foto con note",'comebtn', id, null, true)+'</div>'+
+    azioniFoto(l)+
+    '<button class="cbtn" onclick="CA.posiziona('+id+')">'+(l.pin?"Sposta il pin":"Metti sulla pianta")+'</button>'+
+    (l.stato==="dichiarata"||l.stato==="sospesa"||l.stato==="verificata"
+      ?'<button class="cbtn" onclick="CA.card('+id+')">Condividi</button>':'')+
+    (S.canc===id
+      ?'<div class="cbtn2"><button class="cbtn dan" onclick="CA.elimina('+id+')">Si, rimuovi</button>'+
+       '<button class="cbtn" onclick="CA.annullaCanc()">Annulla</button></div>'
+      :'<button class="cbtn dan" onclick="CA.elimina('+id+')">Rimuovi la lavorazione</button>');
+  if(!tel()) return dentro;
+  return '<div class="cbtn2" style="margin-bottom:8px">'+
+      campoScatto("&#128247; Scatta",'comebtn pri2', id, 'agg', true)+
+      campoScatto("&#128194; Galleria",'comebtn', id, 'agg', false)+'</div>'+
+    tendina('azioni', 'Cosa vuoi fare', '', dentro);
+}
 function scheda(id){
   const c=stato(S.can), l=c.lav.find(x=>x.id===id); if(!l) return "";
   let acts="", cursore="";
@@ -4490,17 +4511,7 @@ function scheda(id){
    (l.pin?"":'<dt>Posizione</dt><dd>non ancora sulla pianta</dd>')+'</dl>'+
    cursore+
    '<div class="cfila"><div>'+bloccoFoto(l)+'</div><div>'+
-     acts+
-     '<div class="cbtn2"><button class="cbtn" onclick="CA.modifica('+id+')">Modifica</button>'+
-     campoScatto("Foto con note",'comebtn', id, null, true)+'</div>'+
-     azioniFoto(l)+
-     '<button class="cbtn" onclick="CA.posiziona('+id+')">'+(l.pin?"Sposta il pin":"Metti sulla pianta")+'</button>'+
-     (l.stato==="dichiarata"||l.stato==="sospesa"||l.stato==="verificata"
-       ?'<button class="cbtn" onclick="CA.card('+id+')">Condividi</button>':'')+
-     (S.canc===id
-       ?'<div class="cbtn2"><button class="cbtn dan" onclick="CA.elimina('+id+')">Si, rimuovi</button>'+
-        '<button class="cbtn" onclick="CA.annullaCanc()">Annulla</button></div>'
-       :'<button class="cbtn dan" onclick="CA.elimina('+id+')">Rimuovi la lavorazione</button>')+
+     azioniScheda(l, id, acts)+
    '</div></div>'+
    strisciaFoto(l)+noteFoto2(l)+
    '<button class="cbtn ok" onclick="CA.salvaScheda('+id+')">Salva e torna alla pianta</button>'+
