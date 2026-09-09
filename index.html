@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1423";</script>
+<script>window.VERSIONE="v20260909-1458";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -567,6 +567,10 @@
     border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);color:var(--ink);}
   #home-modal .act{width:100%;margin-top:8px;padding:12px;font-size:15px;justify-content:center;}
   #home-modal .hint{font-size:12.5px;color:var(--muted);margin:6px 0 12px;line-height:1.45;}
+  #home-modal textarea{width:100%;font:inherit;font-size:15px;padding:11px 12px;
+    border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);color:var(--ink);resize:vertical;}
+  #home-modal textarea:focus{outline:2px solid var(--accent);outline-offset:-2px;}
+  #home-modal .schedadati{margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--line);}
 
   /* scrivania */
   .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0 4px;}
@@ -2735,7 +2739,7 @@ function cambiaLingua(c){
 }
 function formCliente(c){
   const g=k=>esc((c[k]!=null?c[k]:'')+'');
-  modaleHome('Dati di '+c.cliente, 'si salvano subito, anche sugli altri dispositivi',
+  modaleHome('Scheda cliente', esc(c.cliente)+', correggi quello che serve e salva',
     '<div class="cfield"><label>Nome o ragione sociale</label><input id="d-nome" value="'+g('cliente')+'"></div>'+
     '<div class="cfield"><label>Email</label><input id="d-mail" type="email" value="'+g('email')+'"></div>'+
     '<div class="cfield"><label>Telefono</label><input id="d-tel" value="'+g('tel')+'"></div>'+
@@ -2745,9 +2749,14 @@ function formCliente(c){
     '<div class="cfield"><label>Lingua della corrispondenza</label><select id="d-ling">'+
       '<option value="IT"'+(c.lingua!=='EN'?' selected':'')+'>Italiano</option>'+
       '<option value="EN"'+(c.lingua==='EN'?' selected':'')+'>Inglese</option></select></div>'+
-    '<div class="cfield"><label>Note</label><input id="d-note" value="'+g('note')+'"></div>'+
+    '<div class="cfield"><label>Note</label><textarea id="d-note" rows="3">'+g('note')+'</textarea></div>'+
+    '<dl class="ckv schedadati">'+
+      '<dt>Pratiche</dt><dd>'+((c._prat||[]).length)+'</dd>'+
+      '<dt>Primo contatto</dt><dd>'+esc(c.primo||'non indicato')+'</dd>'+
+      '<dt>Ultimo contatto</dt><dd>'+esc(c.ultimo||'non indicato')+'</dd>'+
+    '</dl>'+
     '<button class="act pri" id="d-ok">Salva</button>'+
-    '<button class="act" id="d-no">Annulla</button>');
+    '<button class="act" id="d-no">Chiudi senza salvare</button>');
   document.getElementById('d-no').onclick=chiudiModaleHome;
   document.getElementById('d-ok').onclick=function(){
     const v=id=>{ const e=document.getElementById(id); return e?String(e.value||'').trim():''; };
@@ -2995,7 +3004,7 @@ function renderClienteScheda(D,c){
         <div class="who">${esc(c.categoria||'categoria da definire')}</div></div>
       <div class="schtasti">
         <button class="act pri" id="c-sveglia">Sveglia</button>
-        <button class="act" id="c-dati">Modifica dati</button>
+        <button class="act" id="c-dati">Scheda cliente</button>
       </div>
     </div>
     ${barraCategorie(c, false)}
@@ -4291,6 +4300,20 @@ setView('home'); render();
   #view-can .csub2::-webkit-scrollbar{display:none;}
   #view-can .csub2 button{flex:none;padding:11px 16px;font-size:14px;}
   #view-can .cbarra.due{grid-template-columns:repeat(2,1fr);}
+  #view-can .cbarra.tre{grid-template-columns:repeat(3,1fr);}
+  /* dentro un cantiere, sul telefono, la testata si stringe */
+  body.cantiereaperto .views{display:none;}
+  body.cantiereaperto .top{padding:6px 0 6px;border-bottom:0;}
+  body.cantiereaperto .brand{font-size:14.5px;}
+  body.cantiereaperto #view-can .ctop{padding:2px 0 8px;gap:8px;}
+  body.cantiereaperto #view-can .ctop h3{font-size:17px;}
+  body.cantiereaperto #view-can .ctop .csub{display:none;}
+  body.cantiereaperto #view-can .csub2{padding:8px 0 5px;}
+  body.cantiereaperto #view-can .csub2 button{padding:8px 13px;font-size:13px;}
+  body.cantiereaperto #view-can .ctap{padding:7px 11px;font-size:11.5px;}
+  #view-can .ctop .cscriv{margin-left:auto;background:var(--surface);color:var(--ink-soft);
+    border:1px solid var(--line-strong);}
+  #view-can .zb .zpieno{font-size:20px;}
   #view-can .cbarra{position:fixed;left:0;right:0;bottom:0;z-index:140;display:grid;grid-template-columns:repeat(4,1fr);
     gap:7px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(251,253,255,.97);
     border-top:1px solid var(--cline2);box-shadow:0 -4px 18px rgba(10,30,50,.14);}
@@ -4650,9 +4673,11 @@ function render(){
   if(!S.can){ host.innerHTML=listaCantieri(); return; }
   const p=prat(S.can), c=stato(S.can);
   const subs=[["pianta","Pianta e lavorazioni"],["amb","Ambienti e forniture"],["doc","Documenti"],["dit","Ditte"],["ck","Cantierizzazione"],["dia","Diario"]];
+  try{ document.body.classList.toggle('cantiereaperto', tel() && !!S.can); }catch(e){}
   host.innerHTML='<div class="ctop"><button class="cback" onclick="CA.home()">&lsaquo; Cantieri</button>'+
     '<div><h3>'+esc(p.immobile||p.cliente||"Cantiere")+'</h3>'+
     '<div class="csub">'+esc(p.cliente||"")+(p.dettaglio?' &middot; '+esc(p.dettaglio):"")+'</div></div>'+
+    (tel()?'<button class="cback cscriv" onclick="CA.vaiScrivania()">Scrivania</button>':'')+
     '<span class="cid">pratica '+esc(p.id)+(p.cartella?' &middot; '+esc(p.cartella):"")+'</span></div>'+
     '<div class="csub2">'+subs.map(s=>'<button aria-current="'+(S.sub===s[0])+'" onclick="CA.tab(\''+s[0]+'\')">'+s[1]+'</button>').join("")+'</div>'+
     (S.sub==="ck"?vistaCheck(c):S.sub==="dia"?vistaDiario(c):S.sub==="dit"?vistaDitte(c):S.sub==="foto"?vistaFoto():S.sub==="amb"?vistaAmbienti(c):S.sub==="doc"?vistaDoc(c):S.sub==="tav"?vistaTavolaAmb(c):vistaPianta(c))+
@@ -4835,11 +4860,11 @@ function suQuestaTavola(l,p){ return !!l.pin && (!p || !l.piana || l.piana===p.i
 function tel(){ return window.innerWidth<=760; }
 function barraTel(){
   if(!S.can||S.sub==="foto"||S.full) return '';
-  /* solo due tasti fissi: la nota si scrive nella scheda del pin,
-     il report sta in fondo alle lavorazioni attive */
-  return '<div class="cbarra due">'+
+  /* tre tasti fissi: scattare, segnare un punto, saltare all'elenco */
+  return '<div class="cbarra tre">'+
     '<button class="pri" onclick="CA.sceltaFoto()"><b>&#128247;</b>Foto</button>'+
-    '<button onclick="CA.pinModo()"><b>&#128205;</b>Pin</button></div>';
+    '<button onclick="CA.pinModo()"><b>&#128205;</b>Pin</button>'+
+    '<button onclick="CA.vaiElenco()"><b>&#9776;</b>Elenco</button></div>';
 }
 function pieno(v){ S.full=!!v; if(S.full){ S.sel=null; S.sub="pianta"; } else { S.rot=false; } render(); }
 function ruota(){ S.rot=!S.rot; render(); }
@@ -4970,37 +4995,36 @@ function vistaPianta(c){
         return '<div class="csec">Ditta per '+esc(m?m.l.toLowerCase():id)+'</div>'+
           ds.map(function(d){ return schedaDitta(d,true); }).join(""); }).join("")
     : "";
+  const bloccoDec=(dec.length?'<div class="csec">Aspettano una tua decisione<span class="n">'+dec.length+'</span></div><div class="clist">'+dec.map(riga).join("")+'</div>':"");
+  const tendLav=tendina('lav', 'Lavorazioni attive', String(att.length),
+      pulsantiCat(c, usate, false)+
+      '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
+      elencoLav);
+  const tendMest=tendina('mest', 'Mestieri', (S.mest.length?S.mest.length+' scelti':MEST.length+''),
+      (S.mest.length||S.cat.length?'<button class="cbtn" onclick="CA.azzeraFiltri()">Togli i filtri</button>':'')+
+      mestScroll(c));
+  const tendPianta=(p?'<details class="ctend">'+
+      '<summary>Pianta, altre cose<span>&#9662;</span></summary>'+
+      '<div class="ctendv">'+
+      '<button class="cbtn pri" onclick="CA.pieno(true)">Pianta a schermo intero</button>'+
+      '<label class="cupl">Carica una tavola<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>'+
+      '<button class="cbtn" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
+      '<button class="cbtn" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi le completate":"Mostra le completate")+'</button>'+
+      '<button class="cbtn" onclick="CA.esportaPianta()">Esporta la pianta</button>'+
+      '</div></details>':"");
   const destra=(S.sel?scheda(S.sel):
       ditteSopra+
-      (tel()
-        ?tendina('mest', 'Mestieri', (S.mest.length?S.mest.length+' scelti':MEST.length+''),
-            (S.mest.length||S.cat.length?'<button class="cbtn" onclick="CA.azzeraFiltri()">Togli i filtri</button>':'')+
-            mestScroll(c))
-        :(mest?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+
-          '<div class="cchips">'+chipTuttiMest()+'</div>'+
-          '<div class="clist">'+mest+'</div>':""))+
-      (dec.length?'<div class="csec">Aspettano una tua decisione<span class="n">'+dec.length+'</span></div><div class="clist">'+dec.map(riga).join("")+'</div>':"")+
-      (tel()
-        ?tendina('lav', 'Lavorazioni attive', String(att.length),
-            pulsantiCat(c, usate, false)+
-            '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
-            elencoLav)
-        :'<div class="csec">Categorie</div>'+
-         pulsantiCat(c, usate, false)+
-         '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'));
+      (mest?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+
+        '<div class="cchips">'+chipTuttiMest()+'</div>'+
+        '<div class="clist">'+mest+'</div>':"")+
+      bloccoDec+
+      '<div class="csec">Categorie</div>'+
+      pulsantiCat(c, usate, false)+
+      '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>');
   if(tel()){
     if(S.sel) return '<div class="ctelback"><button class="cbtn" onclick="CA.chiudi()">&lsaquo; Torna alla pianta</button></div>'+scheda(S.sel);
-    return piano+
-      (p?'<details class="ctend">'+
-        '<summary>Pianta, altre cose<span>&#9662;</span></summary>'+
-        '<div class="ctendv">'+
-        '<button class="cbtn pri" onclick="CA.pieno(true)">Pianta a schermo intero</button>'+
-        '<label class="cupl">Carica una tavola<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>'+
-        '<button class="cbtn" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
-        '<button class="cbtn" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi le completate":"Mostra le completate")+'</button>'+
-        '<button class="cbtn" onclick="CA.esportaPianta()">Esporta la pianta</button>'+
-        '</div></details>':"")+
-      destra;
+    /* ordine sul telefono: pianta, lavorazioni, mestieri, il resto */
+    return piano+ ditteSopra + bloccoDec + tendLav + tendMest + tendPianta;
   }
   return '<div class="c2"><div class="ccol">'+piano+
     (p?'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+
@@ -5345,6 +5369,20 @@ function chiudiModale(){ const m=el("can-modal"); if(m){ m.style.display="none";
 /* ---------- azioni ---------- */
 function apri(id){ S.can=String(id); S.sub="pianta"; S.sel=null; S.mest=[]; S.cat=[]; S.pos=null; render(); window.scrollTo(0,0); }
 function home(){ S.can=null; S.sel=null; render(); }
+function vaiElenco(){
+  if(!S.tende) S.tende={};
+  S.tende.lav=true;
+  if(S.sub!=="pianta"){ S.sub="pianta"; S.sel=null; render(); }
+  setTimeout(function(){
+    const d=[...document.querySelectorAll('#view-can .ctend')].find(function(x){
+      return /Lavorazioni attive/.test(x.textContent); });
+    if(d){ d.open=true; try{ d.scrollIntoView({block:'start', behavior:'smooth'}); }catch(e){ d.scrollIntoView(); } }
+  }, 60);
+}
+function vaiScrivania(){
+  try{ document.body.classList.remove('cantiereaperto'); }catch(e){}
+  try{ window.setView('home'); window.render(); window.scrollTo(0,0); }catch(e){}
+}
 function tab(g){ S.sub=g; S.sel=null; render(); }
 function sel(id){
   if(appenaTrascinato()) return;   /* era un trascinamento, non un tocco */
@@ -6040,19 +6078,53 @@ function dovePorto(lista){
   const vecchie=c.lav.filter(soloFoto).length;
   modale(lista.length>1?(lista.length+" foto pronte"):"Foto pronta", "di che mestiere e'?",
     '<div class="cchips cmest">'+MEST.map(function(m){
-      return '<button class="cchip" onclick="CA.fotoArchivio(\''+m.id+'\')">'+esc(m.l)+'</button>'; }).join("")+'</div>'+
-    '<p class="chint">Va nella cartella del cliente, dentro Cantiere, nella sottocartella del mestiere. Non crea nessuna lavorazione.</p>'+
-    (att.length
-      ? '<div class="csec">Oppure attaccala a una lavorazione</div><div class="clist">'+att.map(function(l){
-          return '<button class="cli" onclick="CA.fotoA('+l.id+')">'+
-            '<span class="cnum" style="background:'+CATS[l.cat].c+'">'+l.n+'</span>'+
-            '<span class="m"><span class="t">'+esc(l.tit)+'</span>'+
-            '<span class="s">'+esc(CATS[l.cat].b)+(l.loc?' &middot; '+esc(l.loc):"")+'</span></span>'+
-            '<span class="r"><span class="cchev">&rsaquo;</span></span></button>'; }).join("")+'</div>'
-      : '')+
-    '<button class="cbtn" style="margin-top:10px" onclick="CA.fotoNuovaDa()">Nuova lavorazione da questa foto</button>'+
-    (vecchie?'<button class="cbtn dan" onclick="CA.pulisciFoto()">Togli le '+vecchie+' vecchie voci Foto di cantiere</button>':'')+
+      return '<button class="cchip" onclick="CA.fotoMestiere(\''+m.id+'\')">'+esc(m.l)+'</button>'; }).join("")+'</div>'+
+    (vecchie?'<button class="cbtn dan" style="margin-top:12px" onclick="CA.pulisciFoto()">Togli le '+vecchie+' vecchie voci Foto di cantiere</button>':'')+
     '<button class="cbtn" onclick="CA.fotoAnnulla()">Annulla</button>');
+}
+/* scelto il mestiere, chiedo il resto in un colpo solo */
+let FOTOMEST=null;
+function fotoMestiere(mid){
+  const lista=FOTOATTESA||[];
+  if(!lista.length){ chiudiModale(); return; }
+  FOTOMEST=mid;
+  const m=MEST.find(function(x){ return x.id===mid; }) || MEST[0];
+  const u=ultimaScelta();
+  const cat=(u && CATS[u.cat] && mestDi(u.cat)===mid) ? u.cat : m.c[0];
+  const loc=(u&&u.loc)||"";
+  modale(lista.length>1?(lista.length+" foto, "+m.l):("Foto, "+m.l), "ambiente, descrizione e il resto",
+    '<div class="cfield"><label>Descrizione</label><input id="ca-t" placeholder="Es. scatola derivazione da spostare"></div>'+
+    bloccoCat(mid, cat)+
+    '<div class="cfield"><label>Ambiente</label><input id="ca-l" value="'+esc(loc)+'" placeholder="Es. cucina"></div>'+
+    '<div class="cfield"><label>Urgenza</label><select id="ca-u">'+
+      ['normale','urgente','bloccante'].map(function(k){
+        return '<option value="'+k+'">'+esc(UR[k]||k)+'</option>'; }).join("")+'</select></div>'+
+    '<div class="cfield"><label>Nota</label><textarea id="ca-n" placeholder="Quello che diresti a voce sul posto"></textarea></div>'+
+    bloccoImpresa(cat, (u&&u.imp)||null)+
+    '<button class="cbtn pri" onclick="CA.fotoCrea()">Salva</button>'+
+    '<button class="cbtn" onclick="CA.fotoAnnulla()">Annulla</button>');
+  setTimeout(function(){ const e=el("ca-t"); if(e) e.focus(); }, 120);
+}
+function fotoCrea(){
+  const lista=FOTOATTESA||[]; FOTOATTESA=null;
+  const mid=FOTOMEST; FOTOMEST=null;
+  if(!lista.length){ chiudiModale(); return; }
+  const c=stato(S.can), p=piantaAttiva();
+  const g=function(k){ const e=el(k); return e?String(e.value||"").trim():""; };
+  const cat=g("ca-c")||(MEST.find(function(x){ return x.id===mid; })||MEST[0]).c[0];
+  const l={id:c.next,n:c.next,tit:g("ca-t")||"Foto di cantiere",cat:cat,
+    imp:g("ca-i"),loc:g("ca-l"),urg:g("ca-u")||"normale",nota:g("ca-n"),
+    stato:"dafare",pct:0,pin:null,piana:p?p.id:null,blocca:[],nuovo:true,
+    creato:oggi(),agg:oggi()};
+  c.next++; c.lav.push(l);
+  attaccaFoto(l, lista);
+  ricordaScelta(l);
+  nota("Creata la lavorazione "+l.n+" con "+lista.length+" foto di cantiere.", l.id);
+  S.foto=null; S.dis=false; S.sub="pianta"; S.sel=l.id;
+  salva(); chiudiModale(); render();
+  toast("Lavorazione "+l.n+" creata con "+lista.length+" foto");
+  suDrive(mid, lista);
+  if(!l.pin && p) posiziona(l.id);
 }
 /* archivio su Drive: cartella cliente, poi Cantiere, poi il mestiere */
 function cartellaDentro(nome, padre){
@@ -6067,14 +6139,13 @@ function cartellaDentro(nome, padre){
         .then(function(r2){ return (r2&&r2.payload&&r2.payload.id)||null; });
     });
 }
-function fotoArchivio(mid){
-  const lista=FOTOATTESA||[]; FOTOATTESA=null;
-  if(!lista.length){ chiudiModale(); return; }
+/* copia di sicurezza su Drive: cartella del cliente, Cantiere, mestiere */
+function suDrive(mid, lista){
+  if(!lista || !lista.length) return;
   const m=MEST.find(function(x){ return x.id===mid; }) || MEST[0];
-  const c=stato(S.can), p=prat(S.can);
+  const p=prat(S.can);
   const cliente=(p&&p.cliente)||S.can;
-  chiudiModale();
-  if(!window.MCP){ toast("Google Drive non e' collegato, la foto non e' stata archiviata"); return; }
+  if(!window.MCP) return;
   toast("Archivio "+lista.length+" foto in Cantiere, "+m.l+"…");
   const stampa=new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
   window.cartellaCliente(cliente)
@@ -6605,7 +6676,9 @@ function vista(dentro,ar){
   return '<div class="pview" id="ca-pv" style="aspect-ratio:'+r+';max-width:calc(var(--hpian,60vh) * '+r+');margin:0 auto">'+
    '<div class="pcv" id="ca-cv" style="--k:1">'+dentro+'</div>'+
    '<div class="zb"><span class="lvl" id="ca-lvl">100%</span>'+
-   '<button onclick="CA.zoom(-1)">&minus;</button><button onclick="CA.zoom(1)">+</button></div></div>';
+   '<button onclick="CA.zoom(-1)">&minus;</button><button onclick="CA.zoom(1)">+</button>'+
+   (tel()&&!S.full?'<button class="zpieno" onclick="CA.pieno(true)" title="Pianta a schermo intero">&#9974;</button>':'')+
+   '</div></div>';
 }
 function applica(){ const cv=el("ca-cv"),vw=el("ca-pv"); if(!cv||!vw) return;
   const w=vw.clientWidth,h=vw.clientHeight;
@@ -7264,7 +7337,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,fotoArchivio:fotoArchivio,pulisciFoto:pulisciFoto,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,vaiElenco:vaiElenco,vaiScrivania:vaiScrivania,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,fotoA:fotoA,fotoNuovaDa:fotoNuovaDa,fotoAnnulla:fotoAnnulla,fotoMestiere:fotoMestiere,fotoCrea:fotoCrea,pulisciFoto:pulisciFoto,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
  carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
