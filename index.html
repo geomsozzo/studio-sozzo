@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1355";</script>
+<script>window.VERSIONE="v20260909-1423";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -515,6 +515,34 @@
   .box.warn{border-left-color:var(--amber);} .box.warn .k{color:var(--amber);}
   .box.bad{border-left-color:var(--red);} .box.bad .k{color:var(--red);}
   .empty{color:var(--muted);font-size:14px;padding:40px 10px;text-align:center;}
+  /* testata della scheda cliente */
+  .schtesta{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;}
+  .schtesta .schnome{flex:1;min-width:180px;}
+  .schtesta h3{margin:0;}
+  .schtesta .schtasti{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;}
+  .schtesta .schtasti .act{padding:9px 16px;font-size:13.5px;}
+  .bandiera{font-size:30px;line-height:1;padding:2px 4px;border:0;background:none;cursor:pointer;
+    border-radius:8px;flex:none;}
+  .bandiera:hover{background:var(--surface-3);}
+  .svebox{margin-top:14px;}
+  /* soldi */
+  .soldi .sf{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:10px;}
+  .soldi .sf input,.soldi .sf select{width:100%;font:inherit;font-size:14.5px;padding:9px 11px;margin-top:5px;
+    border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);color:var(--ink);}
+  .soldi .sf input:focus,.soldi .sf select:focus{outline:2px solid var(--accent);outline-offset:-2px;}
+  .soldi .due{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:620px){ .soldi .due{grid-template-columns:1fr;} }
+  .sriga{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);
+    border-radius:9px;background:var(--surface);margin-bottom:7px;}
+  .sriga.ok{border-left:4px solid var(--u4);}
+  .sriga .stipo{font-family:var(--m);font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:3px 9px;border-radius:999px;background:var(--surface-3);color:var(--ink-soft);}
+  .sriga .stipo.t-fattura{background:#E8F0FE;color:#1552B0;}
+  .sriga .stipo.t-acconto{background:#FFF3E0;color:#A85B00;}
+  .sriga .stipo.t-saldo{background:#E7F5EA;color:#1E6B2A;}
+  .sriga .sdata{font-family:var(--m);font-size:12.5px;color:var(--muted);}
+  .sriga .simp{font-size:16px;font-weight:700;color:var(--ink);margin-left:auto;}
+  .sriga .snote{flex-basis:100%;font-size:12.5px;color:var(--muted);}
   /* sveglie */
   .sverow{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);
     border-left:5px solid var(--line-strong);border-radius:9px;background:var(--surface);margin-bottom:8px;flex-wrap:wrap;}
@@ -795,6 +823,8 @@
   .catfil .catx{position:static;width:auto;height:auto;border-radius:999px;padding:6px 12px;
     font-family:var(--f);font-size:12.5px;font-weight:600;}
   .catfiltop{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);}
+  /* sul telefono i filtri per tipo di lavoro non servono, rubano solo schermo */
+  @media(max-width:760px){ .catfiltop{display:none;} }
   /* finestra */
   .modale{position:fixed;inset:0;background:rgba(10,25,40,.45);display:flex;align-items:flex-start;
     justify-content:center;padding:5vh 16px;z-index:120;overflow-y:auto;}
@@ -1583,6 +1613,11 @@ function setSaved(txt){ const el=document.getElementById('saved'); if(el) el.tex
       try{ window.preparaTutto(); }catch(e){} } });
     ascolta('stato/sveglie', ()=>SVE, v=>{ if(v && typeof v==='object'){ SVE=v;
       try{ localStorage.setItem('urg-sveglie', JSON.stringify(SVE)); }catch(e){} } });
+    ascolta('stato/conti', ()=>CONTI, v=>{ if(v && typeof v==='object'){ CONTI=v;
+      try{ localStorage.setItem('urg-conti', JSON.stringify(CONTI)); }catch(e){} } });
+    ascolta('stato/climod', ()=>CLIMOD, v=>{ if(v && typeof v==='object'){ CLIMOD=v;
+      try{ localStorage.setItem('urg-climod', JSON.stringify(CLIMOD)); }catch(e){}
+      try{ window.preparaTutto(); }catch(e){} } });
     db.doc('stato/cantieri').onSnapshot(sn=>{
       if(Date.now()-(ECO['stato/cantieri']||0) < 6000) return;
       const d=sn.exists?sn.data():null; if(!d||!d.v) return;
@@ -2415,7 +2450,6 @@ function renderStage(){
       :(state.catf?shown.length+' client'+(shown.length===1?'e':'i')+' per '+esc((CATLAVMAP[state.catf]||{}).n||state.catf)
         :'Rassegna del giorno · '+shown.length+' clienti in ordine di urgenza')}
       <span style="text-transform:none;letter-spacing:0;font-family:var(--f)">
-      ${state.catf?`<button class="act" data-catf="">togli il filtro</button>`:''}
       ${nascosti.length?`· ${nascosti.length} smaltiti oggi <button class="act" id="ripristina">rimetti in lista</button>`:''}
       ${Object.keys(CH).length?`· ${Object.keys(CH).length} chiuse <button class="act" id="vedichiuse">vedi</button>`:''}</span></h2>
     </div>
@@ -2473,6 +2507,13 @@ function renderStage(){
 const norm = x => String(x||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean).sort().join(' ');
 function preparaClienti(){ DATA.clienti.forEach((c,i)=>{
   c._i=i;
+  /* le correzioni che hai fatto a mano valgono sopra al foglio.
+     Attenzione: questa funzione gira anche prima che CLIMOD sia pronto. */
+  const mod=(typeof CLIMOD!=='undefined' && CLIMOD) ? CLIMOD[c._nome||c.cliente] : null;
+  if(mod){
+    if(!c._nome) c._nome=c.cliente;
+    Object.keys(mod).forEach(function(k){ if(mod[k]!=='' && mod[k]!=null) c[k]=mod[k]; });
+  }
   const realFolder = x => x && !x.includes('*') ? x.trim() : '';
   c._folder = realFolder(c.cartella);
   c._prat = DATA.pratiche.filter(p =>
@@ -2487,6 +2528,12 @@ preparaClienti();
    sopra la base che arriva dal foglio: cosi' non tocchiamo mai lo storico */
 var NUOVE=[];
 try{ var __n=JSON.parse(localStorage.getItem('urg-nuove')||'null'); if(Array.isArray(__n)) NUOVE=__n; }catch(e){}
+/* correzioni ai dati dei clienti, sopra a quelli che arrivano dal foglio */
+var CLIMOD={};
+try{ var __cm=JSON.parse(localStorage.getItem('urg-climod')||'null'); if(__cm&&typeof __cm==='object') CLIMOD=__cm; }catch(e){}
+/* soldi del cliente: prezzo pattuito, preventivo, acconti, saldi e fatture */
+var CONTI={};
+try{ var __c=JSON.parse(localStorage.getItem('urg-conti')||'null'); if(__c&&typeof __c==='object') CONTI=__c; }catch(e){}
 /* sveglie: promemoria legati al cliente, con data, ora e grado di urgenza */
 var SVE={};
 try{ var __s=JSON.parse(localStorage.getItem('urg-sveglie')||'null'); if(__s&&typeof __s==='object') SVE=__s; }catch(e){}
@@ -2527,16 +2574,18 @@ function barraFiltroCat(){
     return '<button class="catbtn c-'+x.k+' '+(on?'pieno':'spento')+'" data-catf="'+x.k+'" '+
       'title="'+esc(x.n)+', '+n+' clienti">'+esc(x.n)+'<span class="cn">'+n+'</span></button>';
   }).join('')+
-  (state.catf?'<button class="catx" data-catf="" title="togli il filtro">togli il filtro</button>':'')+
   '</div>';
 }
 function disegnaFiltroTop(){
   const t=document.getElementById('catfiltop'); if(!t) return;
-  t.innerHTML=CATLAV.map(function(x){
+  let voci=null;
+  try{ voci=CATLAV; }catch(e){ return; }   /* l'elenco dei tipi non e' ancora pronto */
+  if(!voci) return;
+  t.innerHTML=voci.map(function(x){
     const n=contaCat(x.k), on=state.catf===x.k;
     return '<button class="catbtn c-'+x.k+' '+(on?'pieno':'spento')+'" data-catf="'+x.k+'" '+
       'title="'+esc(x.n)+', '+n+' clienti">'+esc(x.n)+'<span class="cn">'+n+'</span></button>';
-  }).join('')+(state.catf?'<button class="catx" data-catf="" title="togli il filtro">togli il filtro</button>':'');
+  }).join('');
   agganciaFiltroCat(t);
 }
 function agganciaFiltroCat(dove){
@@ -2671,6 +2720,151 @@ const SVEURG={
   '3':{n:'Normale',      gg:7,  ora:'09:00', pro:[120],      col:'u3'},
   '4':{n:'Quando capita',gg:30, ora:'10:00', pro:[120],      col:'u4'}
 };
+/* ---------- dati del cliente che puoi correggere ---------- */
+function salvaClimod(){
+  try{ localStorage.setItem('urg-climod', JSON.stringify(CLIMOD)); }catch(e){}
+  if(DB){ ECO['stato/climod']=Date.now(); DB.doc('stato/climod').set({v:CLIMOD}).catch(()=>{}); }
+}
+function cambiaLingua(c){
+  const nuova = (c.lingua==='EN') ? 'IT' : 'EN';
+  CLIMOD[c.cliente]=Object.assign({}, CLIMOD[c.cliente]||{}, {lingua:nuova});
+  salvaClimod();
+  try{ window.preparaTutto(); }catch(e){}
+  renderHome();
+  toast(nuova==='EN'?'Corrispondenza in inglese':'Corrispondenza in italiano');
+}
+function formCliente(c){
+  const g=k=>esc((c[k]!=null?c[k]:'')+'');
+  modaleHome('Dati di '+c.cliente, 'si salvano subito, anche sugli altri dispositivi',
+    '<div class="cfield"><label>Nome o ragione sociale</label><input id="d-nome" value="'+g('cliente')+'"></div>'+
+    '<div class="cfield"><label>Email</label><input id="d-mail" type="email" value="'+g('email')+'"></div>'+
+    '<div class="cfield"><label>Telefono</label><input id="d-tel" value="'+g('tel')+'"></div>'+
+    '<div class="cfield"><label>Immobile o indirizzo</label><input id="d-imm" value="'+g('immobile')+'"></div>'+
+    '<div class="cfield"><label>Categoria</label><input id="d-cat" value="'+g('categoria')+'"></div>'+
+    '<div class="cfield"><label>Cartella sul computer</label><input id="d-cart" value="'+g('cartella')+'"></div>'+
+    '<div class="cfield"><label>Lingua della corrispondenza</label><select id="d-ling">'+
+      '<option value="IT"'+(c.lingua!=='EN'?' selected':'')+'>Italiano</option>'+
+      '<option value="EN"'+(c.lingua==='EN'?' selected':'')+'>Inglese</option></select></div>'+
+    '<div class="cfield"><label>Note</label><input id="d-note" value="'+g('note')+'"></div>'+
+    '<button class="act pri" id="d-ok">Salva</button>'+
+    '<button class="act" id="d-no">Annulla</button>');
+  document.getElementById('d-no').onclick=chiudiModaleHome;
+  document.getElementById('d-ok').onclick=function(){
+    const v=id=>{ const e=document.getElementById(id); return e?String(e.value||'').trim():''; };
+    const dati={cliente:v('d-nome')||c.cliente, email:v('d-mail'), tel:v('d-tel'),
+      immobile:v('d-imm'), categoria:v('d-cat'), cartella:v('d-cart'),
+      lingua:v('d-ling')||'IT', note:v('d-note')};
+    CLIMOD[c.cliente]=Object.assign({}, CLIMOD[c.cliente]||{}, dati);
+    salvaClimod();
+    try{ window.preparaTutto(); ricalcolaUrgenze(); }catch(e){}
+    chiudiModaleHome(); renderHome();
+    toast('Dati salvati');
+  };
+}
+/* ---------- soldi ---------- */
+function contiDi(nome){
+  if(!CONTI[nome] || typeof CONTI[nome]!=='object') CONTI[nome]={pattuito:'', prevn:'', previmp:'', prevstato:'', voci:[]};
+  if(!Array.isArray(CONTI[nome].voci)) CONTI[nome].voci=[];
+  return CONTI[nome];
+}
+function salvaConti(){
+  try{ localStorage.setItem('urg-conti', JSON.stringify(CONTI)); }catch(e){}
+  if(DB){ ECO['stato/conti']=Date.now(); DB.doc('stato/conti').set({v:CONTI}).catch(()=>{}); }
+}
+function numero(v){
+  const n=parseFloat(String(v==null?'':v).replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.'));
+  return isNaN(n)?0:n;
+}
+function euro(n){
+  try{ return n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'; }
+  catch(e){ return n.toFixed(2)+' €'; }
+}
+const TIPOVOCE={acconto:'Acconto', saldo:'Saldo', fattura:'Fattura'};
+function riquadroConti(c){
+  const q=contiDi(c.cliente);
+  const voci=q.voci.slice().sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  const pattuito=numero(q.pattuito);
+  const incassato=voci.filter(v=>v.incassato).reduce((s,v)=>s+numero(v.importo),0);
+  const fatturato=voci.filter(v=>v.tipo==='fattura').reduce((s,v)=>s+numero(v.importo),0);
+  const resta=pattuito-incassato;
+  return `
+    <div class="soldi">
+      <div class="due">
+        <label class="sf">Prezzo pattuito €
+          <input id="q-patt" value="${esc(q.pattuito||'')}" inputmode="decimal" placeholder="1.200"></label>
+        <label class="sf">Preventivo n.
+          <input id="q-prevn" value="${esc(q.prevn||'')}" placeholder="07/2026"></label>
+      </div>
+      <div class="due">
+        <label class="sf">Importo del preventivo €
+          <input id="q-previmp" value="${esc(q.previmp||'')}" inputmode="decimal" placeholder="1.200"></label>
+        <label class="sf">Stato del preventivo
+          <select id="q-prevstato">
+            ${['','da fare','inviato','accettato','rifiutato'].map(k=>`<option value="${k}" ${q.prevstato===k?'selected':''}>${k||'non indicato'}</option>`).join('')}
+          </select></label>
+      </div>
+      <div class="tiles" style="grid-template-columns:repeat(4,1fr);margin:12px 0 4px">
+        <div class="tile"><div class="v">${pattuito?euro(pattuito):'—'}</div><div class="k">pattuito</div></div>
+        <div class="tile"><div class="v">${euro(incassato)}</div><div class="k">incassato</div></div>
+        <div class="tile ${resta>0?'amber':''}"><div class="v">${pattuito?euro(resta):'—'}</div><div class="k">resta da avere</div></div>
+        <div class="tile"><div class="v">${euro(fatturato)}</div><div class="k">fatturato</div></div>
+      </div>
+      ${voci.length?`<div class="rows soldirighe">${voci.map(v=>`
+        <div class="sriga ${v.incassato?'ok':''}">
+          <span class="stipo t-${esc(v.tipo)}">${esc(TIPOVOCE[v.tipo]||v.tipo)}${v.n?' '+esc(v.n):''}</span>
+          <span class="sdata">${esc(giornoIt(v.data))}</span>
+          <span class="simp">${euro(numero(v.importo))}</span>
+          <span class="snote">${esc(v.note||'')}</span>
+          <button class="act" data-qinc="${esc(v.id)}">${v.incassato?'incassato':'segna incassato'}</button>
+          <button class="act dcanc" data-qtogli="${esc(v.id)}">Togli</button>
+        </div>`).join('')}</div>`
+        :'<p class="empty" style="padding:10px 0">Nessun acconto, saldo o fattura registrato.</p>'}
+      <div class="wrapg" style="margin-top:10px">
+        <button class="act" data-qadd="acconto">+ Acconto</button>
+        <button class="act" data-qadd="saldo">+ Saldo</button>
+        <button class="act" data-qadd="fattura">+ Fattura</button>
+      </div>
+    </div>`;
+}
+function agganciaConti(D,c){
+  const q=contiDi(c.cliente);
+  [['q-patt','pattuito'],['q-prevn','prevn'],['q-previmp','previmp'],['q-prevstato','prevstato']].forEach(([id,k])=>{
+    const e=D.querySelector('#'+id); if(!e) return;
+    const scrivi=()=>{ q[k]=e.value; salvaConti(); };
+    e.onchange=scrivi; e.onblur=scrivi;
+  });
+  [...D.querySelectorAll('[data-qadd]')].forEach(b=>b.onclick=()=>formVoce(c, b.dataset.qadd));
+  [...D.querySelectorAll('[data-qinc]')].forEach(b=>b.onclick=()=>{
+    const v=q.voci.find(x=>x.id===b.dataset.qinc); if(!v) return;
+    v.incassato=!v.incassato; salvaConti(); renderHome(); });
+  [...D.querySelectorAll('[data-qtogli]')].forEach(b=>b.onclick=()=>{
+    q.voci=q.voci.filter(x=>x.id!==b.dataset.qtogli); salvaConti(); renderHome(); });
+}
+function formVoce(c, tipo){
+  const q=contiDi(c.cliente);
+  const gia=q.voci.filter(v=>v.incassato).reduce((s,v)=>s+numero(v.importo),0);
+  const resta=Math.max(0, numero(q.pattuito)-gia);
+  modaleHome((TIPOVOCE[tipo]||tipo)+' per '+c.cliente, 'si somma ai conti del cliente',
+    '<div class="cfield"><label>Importo €</label>'+
+      '<input id="v-imp" inputmode="decimal" value="'+(resta?String(resta).replace('.',','):'')+'" placeholder="500"></div>'+
+    '<div class="cfield"><label>Data</label><input type="date" id="v-data" value="'+oggiISO()+'"></div>'+
+    (tipo==='fattura'?'<div class="cfield"><label>Numero della fattura</label><input id="v-n" placeholder="27/26"></div>':'')+
+    '<div class="cfield"><label>Nota</label><input id="v-note" placeholder="Es. bonifico, contanti, alla consegna"></div>'+
+    '<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0 10px">'+
+      '<input type="checkbox" id="v-inc" '+(tipo==='fattura'?'':'checked')+'> Gia\' incassato</label>'+
+    '<button class="act pri" id="v-ok">Aggiungi</button>'+
+    '<button class="act" id="v-no">Annulla</button>');
+  document.getElementById('v-no').onclick=chiudiModaleHome;
+  document.getElementById('v-ok').onclick=function(){
+    const g=id=>{ const e=document.getElementById(id); return e?String(e.value||'').trim():''; };
+    const imp=g('v-imp');
+    if(!numero(imp)){ toast('Scrivi l\'importo'); return; }
+    q.voci.push({id:'v'+Date.now().toString(36), tipo:tipo, importo:imp, data:g('v-data')||oggiISO(),
+      n:g('v-n'), note:g('v-note'), incassato:!!(document.getElementById('v-inc')||{}).checked});
+    salvaConti(); chiudiModaleHome(); renderHome();
+    toast((TIPOVOCE[tipo]||tipo)+' di '+euro(numero(imp))+' registrato');
+  };
+}
 function sveglieDi(nome){ const v=SVE[nome]; return Array.isArray(v)?v:[]; }
 function giornoIt(g){
   try{ const d=new Date(String(g)+'T00:00:00');
@@ -2690,6 +2884,7 @@ function fraQuanto(giorno){
 }
 function riquadroSveglie(c){
   const ss=sveglieDi(c.cliente).slice().sort((a,b)=>String(a.giorno+a.ora).localeCompare(String(b.giorno+b.ora)));
+  if(!ss.length) return '';
   const righe=ss.map(function(s,i){
     const q=fraQuanto(s.giorno);
     return '<div class="sverow '+(SVEURG[s.urg]||SVEURG['3']).col+(q.tardi?' tardi':'')+'">'+
@@ -2700,8 +2895,7 @@ function riquadroSveglie(c){
       (s.url?'<a class="act" target="_blank" rel="noopener" href="'+esc(s.url)+'">Apri</a>':'')+
       '<button class="act dcanc" data-svetogli="'+i+'">Togli</button></div>';
   }).join('');
-  return (righe||'<p class="empty" style="padding:12px 0">Nessuna sveglia per questo cliente.</p>')+
-    '<button class="act pri" id="svenuova" style="margin-top:10px">Metti una sveglia</button>';
+  return '<div class="svebox">'+righe+'</div>';
 }
 function formSveglia(c){
   const prio=String((c._prat&&c._prat.length?Math.min.apply(null,c._prat.map(p=>+p.prio||4)):3));
@@ -2795,16 +2989,23 @@ function renderClienteScheda(D,c){
     </div>`).join('') || `<p class="empty">Nessuna pratica aperta.</p>`;
 
   D.innerHTML = `
-    <div class="code">CLIENTE${c.lingua==='EN'?' · corrispondenza in inglese':''}</div>
-    <h3>${esc(c.cliente)}</h3>
-    <div class="who">${esc(c.categoria||'categoria da definire')}</div>
+    <div class="schtesta">
+      <button class="bandiera" id="c-ling" title="${c.lingua==='EN'?'Corrispondenza in inglese, premi per passare all\'italiano':'Corrispondenza in italiano, premi per passare all\'inglese'}">${c.lingua==='EN'?'&#127468;&#127463;':'&#127470;&#127481;'}</button>
+      <div class="schnome"><h3>${esc(c.cliente)}</h3>
+        <div class="who">${esc(c.categoria||'categoria da definire')}</div></div>
+      <div class="schtasti">
+        <button class="act pri" id="c-sveglia">Sveglia</button>
+        <button class="act" id="c-dati">Modifica dati</button>
+      </div>
+    </div>
     ${barraCategorie(c, false)}
     <div class="tiles" style="grid-template-columns:repeat(3,1fr);margin:14px 0 2px">
       <div class="tile"><div class="v">${aperte.length}</div><div class="k">pratiche aperte</div></div>
       <div class="tile"><div class="v">${Object.keys(byImm).length||1}</div><div class="k">immobili</div></div>
       <div class="tile ${maxatt>14?'amber':''}"><div class="v">${maxatt!=null?maxatt:'—'}</div><div class="k">giorni della attesa più vecchia</div></div>
     </div>
-    <div class="urgbar urgscheda" data-cli="${c._i}" style="margin-top:16px"></div>
+    <div id="svebox">${riquadroSveglie(c)}</div>
+    <div class="urgbar urgscheda" data-cli="${c._i}" style="margin-top:14px"></div>
     <div class="schedaz">
       ${esisteCantiere(c.cliente)?`<button class="act pri" id="s-cantiere" style="background:#1668DC;border-color:#1668DC">Apri il cantiere</button>`:''}
       <button class="act pri" id="s-chiudi">Chiudi pratica</button>
@@ -2812,10 +3013,8 @@ function renderClienteScheda(D,c){
       ${CH[c.cliente]?`<button class="act" id="s-riapri">Riapri, è chiusa dal ${esc(CH[c.cliente].data)}</button>`:''}
     </div>
     <div id="boxchiusura"></div>
-    <h4 class="minih">Sveglie</h4>
-    <div id="svebox">${riquadroSveglie(c)}</div>
-    <h4 class="minih">Lavorazioni</h4>
-    <div id="lavbox">${riquadroLavorazioni(c)}</div>
+    <h4 class="minih">Soldi</h4>
+    <div id="qbox">${riquadroConti(c)}</div>
 
     <h4 class="minih">Immobili e pratiche</h4>
     ${immBlocks}
@@ -2875,9 +3074,14 @@ function renderClienteScheda(D,c){
       documenti del cliente, email agganciate alle sue pratiche, preventivi e fatture con lo stato dei pagamenti, e la cronologia dei contatti.</div>`;
   [...D.querySelectorAll('.prat')].forEach(b=>b.onclick=()=>{state.sel=+b.dataset.i;setView('prat');render();});
 
-  (()=>{ const nuova=D.querySelector('#svenuova');
+  (()=>{ const nuova=D.querySelector('#c-sveglia');
     if(nuova) nuova.onclick=()=>formSveglia(c);
+    const dati=D.querySelector('#c-dati');
+    if(dati) dati.onclick=()=>formCliente(c);
+    const ling=D.querySelector('#c-ling');
+    if(ling) ling.onclick=()=>cambiaLingua(c);
     [...D.querySelectorAll('[data-svetogli]')].forEach(b=>b.onclick=()=>togliSveglia(c.cliente, +b.dataset.svetogli));
+    agganciaConti(D, c);
   })();
 
   dipingiUrgbar(c, D);
