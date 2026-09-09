@@ -1,6 +1,6 @@
 /* Studio Sozzo, guardiano della pagina.
    Tiene una copia dell'app sul telefono, cosi' si apre anche senza campo. */
-const NOME = 'sozzo-20260908-1748';
+const NOME = 'sozzo-20260909-0944';
 const ROBA = [
   './',
   './index.html',
@@ -32,7 +32,8 @@ self.addEventListener('fetch', e => {
   /* le chiamate a Firebase passano sempre dalla rete, se ne occupa lui */
   if (u.hostname.indexOf('googleapis.com') >= 0 ||
       u.hostname.indexOf('firebaseio.com') >= 0 ||
-      u.hostname.indexOf('firebaseapp.com') >= 0) return;
+      u.hostname.indexOf('firebaseapp.com') >= 0 ||
+      u.hostname.indexOf('accounts.google.com') >= 0) return;
 
   /* apertura della pagina: prima la rete, se manca la copia */
   if (r.mode === 'navigate') {
