@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1225";</script>
+<script>window.VERSIONE="v20260909-1322";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -164,7 +164,8 @@
   var CLIENTE_ID = '968877636245-kv0ofa3u6nmqf854q85df92r9n15q1mc.apps.googleusercontent.com';
   var AMBITI = [
     'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/drive'
+    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/calendar.events'
   ].join(' ');
 
   var tok=null, scade=0, tc=null, inCorso=null;
@@ -297,12 +298,43 @@
     });
   }
 
+  /* ---------- calendario ---------- */
+  function creaAppuntamento(a){
+    /* a: {titolo, descrizione, giorno 'AAAA-MM-GG', ora 'HH:MM', minuti, promemoria [minuti] } */
+    var inizio=a.giorno+'T'+(a.ora||'09:00')+':00';
+    var d=new Date(a.giorno+'T'+(a.ora||'09:00')+':00');
+    d.setMinutes(d.getMinutes()+(a.minuti||30));
+    var pad=function(n){ return String(n).padStart(2,'0'); };
+    var fine=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';
+    var fuso='Europe/Rome';
+    try{ fuso=Intl.DateTimeFormat().resolvedOptions().timeZone||fuso; }catch(e){}
+    var corpo={
+      summary: a.titolo||'Promemoria',
+      description: a.descrizione||'',
+      start:{dateTime:inizio, timeZone:fuso},
+      end:{dateTime:fine, timeZone:fuso},
+      reminders:{useDefault:false, overrides:(a.promemoria||[60]).map(function(m){
+        return {method:'popup', minutes:m}; })}
+    };
+    return chiama('https://www.googleapis.com/calendar/v3/calendars/primary/events?fields=id,htmlLink,summary,start',
+      {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(corpo)})
+      .then(function(j){ return {payload:{id:j.id, url:j.htmlLink}}; });
+  }
+  function togliAppuntamento(id){
+    return gettone(false).then(function(t){
+      return fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+encodeURIComponent(id),
+        {method:'DELETE', headers:{Authorization:'Bearer '+t}});
+    }).then(function(){ return {payload:{ok:true}}; });
+  }
+
   window.MCPGOOGLE = {
     callTool: function(server, tool, args){
       args=args||{};
       if(server==='Gmail' && tool==='search_threads') return leggiPosta(args.query, args.pageSize);
       if(server==='Google Drive' && tool==='create_file') return creaFile(args);
       if(server==='Google Drive' && tool==='search_files') return cercaFile(args);
+      if(server==='Google Calendar' && tool==='create_event') return creaAppuntamento(args);
+      if(server==='Google Calendar' && tool==='delete_event') return togliAppuntamento(args.id);
       return Promise.reject({code:'tool_error', message:'non previsto: '+server+' '+tool});
     },
     watchTool: function(){ return function(){}; },
@@ -470,6 +502,30 @@
   .box.warn{border-left-color:var(--amber);} .box.warn .k{color:var(--amber);}
   .box.bad{border-left-color:var(--red);} .box.bad .k{color:var(--red);}
   .empty{color:var(--muted);font-size:14px;padding:40px 10px;text-align:center;}
+  /* sveglie */
+  .sverow{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);
+    border-left:5px solid var(--line-strong);border-radius:9px;background:var(--surface);margin-bottom:8px;flex-wrap:wrap;}
+  .sverow.u1{border-left-color:#C62828;} .sverow.u2{border-left-color:#E08600;}
+  .sverow.u3{border-left-color:#1668DC;} .sverow.u4{border-left-color:#2E7D32;}
+  .sverow.tardi{background:#FDECEA;}
+  .sverow .svedata{font-family:var(--m);font-size:12.5px;color:var(--ink-soft);min-width:96px;line-height:1.3;}
+  .sverow .svedata b{display:block;font-size:15px;color:var(--ink);}
+  .sverow .svetx{flex:1;min-width:150px;font-size:14.5px;font-weight:600;color:var(--ink);}
+  .sverow .svesub{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:2px;}
+  #home-modal{position:fixed;inset:0;background:rgba(10,25,40,.45);display:flex;align-items:flex-start;
+    justify-content:center;padding:24px 14px;overflow:auto;z-index:400;}
+  #home-modal .mb{background:var(--surface);border-radius:12px;width:min(520px,100%);box-shadow:0 18px 50px rgba(0,0,0,.3);overflow:hidden;}
+  #home-modal .mh{padding:15px 18px 13px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px;}
+  #home-modal .mh h4{margin:0 0 3px;font-size:18px;letter-spacing:-.02em;}
+  #home-modal .mh .sb{font-size:13px;color:var(--muted);}
+  #home-modal .mh .x{margin-left:auto;font-size:22px;color:var(--muted);line-height:1;padding:0 4px;background:none;border:0;cursor:pointer;}
+  #home-modal .mbdy{padding:14px 18px 20px;}
+  #home-modal .cfield{margin-bottom:12px;}
+  #home-modal .cfield label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  #home-modal input,#home-modal select{width:100%;font:inherit;font-size:15px;padding:11px 12px;
+    border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);color:var(--ink);}
+  #home-modal .act{width:100%;margin-top:8px;padding:12px;font-size:15px;justify-content:center;}
+  #home-modal .hint{font-size:12.5px;color:var(--muted);margin:6px 0 12px;line-height:1.45;}
 
   /* scrivania */
   .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0 4px;}
@@ -1493,6 +1549,11 @@ function setSaved(txt){ const el=document.getElementById('saved'); if(el) el.tex
     ascolta('stato/lavorazioni', ()=>LAV, v=>{LAV=v;});
     ascolta('stato/categorie', ()=>CSEL, v=>{CSEL=v;});
     ascolta('stato/allerte', ()=>ARCH, v=>{ARCH=v;});
+    ascolta('stato/nuove', ()=>NUOVE, v=>{ if(Array.isArray(v)){ NUOVE=v;
+      try{ localStorage.setItem('urg-nuove', JSON.stringify(NUOVE)); }catch(e){}
+      try{ window.preparaTutto(); }catch(e){} } });
+    ascolta('stato/sveglie', ()=>SVE, v=>{ if(v && typeof v==='object'){ SVE=v;
+      try{ localStorage.setItem('urg-sveglie', JSON.stringify(SVE)); }catch(e){} } });
     db.doc('stato/cantieri').onSnapshot(sn=>{
       if(Date.now()-(ECO['stato/cantieri']||0) < 6000) return;
       const d=sn.exists?sn.data():null; if(!d||!d.v) return;
@@ -2389,7 +2450,27 @@ function preparaClienti(){ DATA.clienti.forEach((c,i)=>{
   c._imm = [...new Set(c._prat.map(p=>p.immobile).filter(Boolean).concat(c.immobile?[c.immobile]:[]))];
 }); }
 preparaClienti();
-window.preparaTutto = function(){ try{ preparaPratiche(); preparaClienti(); }catch(e){} };
+/* le pratiche create dall'app vivono a parte, in stato/nuove, e si innestano
+   sopra la base che arriva dal foglio: cosi' non tocchiamo mai lo storico */
+var NUOVE=[];
+try{ var __n=JSON.parse(localStorage.getItem('urg-nuove')||'null'); if(Array.isArray(__n)) NUOVE=__n; }catch(e){}
+/* sveglie: promemoria legati al cliente, con data, ora e grado di urgenza */
+var SVE={};
+try{ var __s=JSON.parse(localStorage.getItem('urg-sveglie')||'null'); if(__s&&typeof __s==='object') SVE=__s; }catch(e){}
+function innestaNuove(){
+  if(!Array.isArray(NUOVE)||!NUOVE.length) return;
+  const ci=new Set(DATA.pratiche.map(p=>String(p.id)));
+  NUOVE.forEach(function(p){ if(!ci.has(String(p.id))) DATA.pratiche.push(p); });
+  const cn=new Set(DATA.clienti.map(c=>norm(c.cliente)));
+  NUOVE.forEach(function(p){
+    if(!p.cliente || cn.has(norm(p.cliente))) return;
+    cn.add(norm(p.cliente));
+    DATA.clienti.push({n:String(DATA.clienti.length+1), cliente:p.cliente, email:'', cartella:'',
+      immobile:p.immobile||'', categoria:p.cat||'', lingua:'IT',
+      primo:p.creata||oggiISO(), ultimo:p.creata||oggiISO(), stato:'', fase:'', azione:'', scadenza:'', note:''});
+  });
+}
+window.preparaTutto = function(){ try{ innestaNuove(); preparaPratiche(); preparaClienti(); }catch(e){} };
 
 function renderCli(){
   ricalcolaUrgenze();
@@ -2506,6 +2587,115 @@ function renderCliDetail(){
   if(!c){ D.innerHTML=`<p class="empty">Scegli un cliente per vedere la sua scheda.</p>`; return; }
   renderClienteScheda(D,c);
 }
+/* ---------- sveglie ----------
+   Un promemoria legato al cliente. Vive nell'app e, se il calendario e'
+   collegato, diventa un appuntamento vero su Google che suona sul telefono. */
+const SVEURG={
+  '1':{n:'Urgente',      gg:1,  ora:'08:30', pro:[1440,60], col:'u1'},
+  '2':{n:'Da fare a breve', gg:3,  ora:'09:00', pro:[1440],     col:'u2'},
+  '3':{n:'Normale',      gg:7,  ora:'09:00', pro:[120],      col:'u3'},
+  '4':{n:'Quando capita',gg:30, ora:'10:00', pro:[120],      col:'u4'}
+};
+function sveglieDi(nome){ const v=SVE[nome]; return Array.isArray(v)?v:[]; }
+function giornoIt(g){
+  try{ const d=new Date(String(g)+'T00:00:00');
+    return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'}); }
+  catch(e){ return String(g||''); }
+}
+function salvaSveglie(){
+  try{ localStorage.setItem('urg-sveglie', JSON.stringify(SVE)); }catch(e){}
+  if(DB){ ECO['stato/sveglie']=Date.now(); DB.doc('stato/sveglie').set({v:SVE}).catch(()=>{}); }
+}
+function fraQuanto(giorno){
+  const d=Math.round((new Date(giorno+'T00:00:00')-new Date(oggiISO()+'T00:00:00'))/86400000);
+  if(d<0) return {txt:'scaduta da '+(-d)+' gg', tardi:true};
+  if(d===0) return {txt:'oggi', tardi:false};
+  if(d===1) return {txt:'domani', tardi:false};
+  return {txt:'fra '+d+' giorni', tardi:false};
+}
+function riquadroSveglie(c){
+  const ss=sveglieDi(c.cliente).slice().sort((a,b)=>String(a.giorno+a.ora).localeCompare(String(b.giorno+b.ora)));
+  const righe=ss.map(function(s,i){
+    const q=fraQuanto(s.giorno);
+    return '<div class="sverow '+(SVEURG[s.urg]||SVEURG['3']).col+(q.tardi?' tardi':'')+'">'+
+      '<span class="svedata">'+esc(giornoIt(s.giorno))+'<b>'+esc(s.ora||'')+'</b></span>'+
+      '<span class="svetx">'+esc(s.txt||'Promemoria')+
+        '<span class="svesub">'+esc(q.txt)+' &middot; '+esc((SVEURG[s.urg]||SVEURG['3']).n)+
+        (s.gcal?' &middot; sul calendario Google':' &middot; solo nell\'app')+'</span></span>'+
+      (s.url?'<a class="act" target="_blank" rel="noopener" href="'+esc(s.url)+'">Apri</a>':'')+
+      '<button class="act dcanc" data-svetogli="'+i+'">Togli</button></div>';
+  }).join('');
+  return (righe||'<p class="empty" style="padding:12px 0">Nessuna sveglia per questo cliente.</p>')+
+    '<button class="act pri" id="svenuova" style="margin-top:10px">Metti una sveglia</button>';
+}
+function formSveglia(c){
+  const prio=String((c._prat&&c._prat.length?Math.min.apply(null,c._prat.map(p=>+p.prio||4)):3));
+  const u=SVEURG[prio]||SVEURG['3'];
+  const d=new Date(); d.setDate(d.getDate()+u.gg);
+  const giorno=d.toISOString().slice(0,10);
+  const az=(c._prat||[]).map(p=>p.azione).filter(Boolean)[0]||'';
+  modaleHome('Sveglia per '+c.cliente, 'la metto anche sul calendario Google, cosi\' suona',
+    '<div class="cfield"><label>Cosa devi ricordare</label>'+
+      '<input id="sv-txt" value="'+esc(az?az.slice(0,90):'')+'" placeholder="Es. richiamare per la firma"></div>'+
+    '<div class="cfield"><label>Urgenza</label><select id="sv-u">'+
+      Object.keys(SVEURG).map(k=>'<option value="'+k+'"'+(k===prio?' selected':'')+'>'+esc(SVEURG[k].n)+'</option>').join('')+
+      '</select></div>'+
+    '<div class="cfield"><label>Giorno</label><input type="date" id="sv-g" value="'+giorno+'"></div>'+
+    '<div class="cfield"><label>Ora</label><input type="time" id="sv-o" value="'+u.ora+'"></div>'+
+    '<p class="hint" id="sv-nota">L\'urgenza decide quanto prima ti avvisa: urgente il giorno prima e un\'ora prima, normale due ore prima.</p>'+
+    '<button class="act pri" id="sv-salva">Metti la sveglia</button>'+
+    '<button class="act" id="sv-annulla">Annulla</button>');
+  const gg=document.getElementById('sv-u');
+  if(gg) gg.onchange=function(){
+    const k=gg.value, uu=SVEURG[k]||SVEURG['3'];
+    const dd=new Date(); dd.setDate(dd.getDate()+uu.gg);
+    const eg=document.getElementById('sv-g'), eo=document.getElementById('sv-o');
+    if(eg) eg.value=dd.toISOString().slice(0,10);
+    if(eo) eo.value=uu.ora;
+  };
+  document.getElementById('sv-annulla').onclick=chiudiModaleHome;
+  document.getElementById('sv-salva').onclick=function(){ salvaSveglia(c); };
+}
+function salvaSveglia(c){
+  const g=id=>{ const e=document.getElementById(id); return e?String(e.value||'').trim():''; };
+  const txt=g('sv-txt')||'Promemoria', urg=g('sv-u')||'3', giorno=g('sv-g'), ora=g('sv-o')||'09:00';
+  if(!giorno){ toast('Scegli il giorno'); return; }
+  const u=SVEURG[urg]||SVEURG['3'];
+  const s={id:'s'+Date.now().toString(36), txt:txt, urg:urg, giorno:giorno, ora:ora, cliente:c.cliente, gcal:false, url:''};
+  if(!Array.isArray(SVE[c.cliente])) SVE[c.cliente]=[];
+  SVE[c.cliente].push(s);
+  salvaSveglie(); chiudiModaleHome(); renderHome();
+  toast('Sveglia messa per il '+giornoIt(giorno));
+  if(window.MCPGOOGLE && MCPGOOGLE.collegato && MCPGOOGLE.collegato()){
+    MCPGOOGLE.callTool('Google Calendar','create_event',{
+      titolo:'Studio Sozzo, '+c.cliente+': '+txt,
+      descrizione:'Promemoria creato dal gestionale. Urgenza '+u.n+'.',
+      giorno:giorno, ora:ora, minuti:30, promemoria:u.pro
+    }).then(function(r){
+      s.gcal=true; s.gid=(r.payload||{}).id||''; s.url=(r.payload||{}).url||'';
+      salvaSveglie(); renderHome();
+      toast('Messa anche sul calendario Google');
+    }).catch(function(){ toast('Sveglia salvata, ma il calendario non ha risposto'); });
+  }
+}
+function togliSveglia(nome, i){
+  const ss=sveglieDi(nome); const s=ss[i]; if(!s) return;
+  ss.splice(i,1); SVE[nome]=ss; salvaSveglie(); renderHome();
+  toast('Sveglia tolta');
+  if(s.gid && window.MCPGOOGLE && MCPGOOGLE.collegato && MCPGOOGLE.collegato()){
+    MCPGOOGLE.callTool('Google Calendar','delete_event',{id:s.gid}).catch(function(){});
+  }
+}
+function modaleHome(tit,sub,body){
+  let m=document.getElementById('home-modal');
+  if(!m){ m=document.createElement('div'); m.id='home-modal'; document.body.appendChild(m); }
+  m.style.display='flex';
+  m.innerHTML='<div class="mb"><div class="mh"><div><h4>'+esc(tit)+'</h4><div class="sb">'+esc(sub)+'</div></div>'+
+    '<button class="x" id="hm-x">&times;</button></div><div class="mbdy">'+body+'</div></div>';
+  m.onclick=e=>{ if(e.target===m) chiudiModaleHome(); };
+  document.getElementById('hm-x').onclick=chiudiModaleHome;
+}
+function chiudiModaleHome(){ const m=document.getElementById('home-modal'); if(m){ m.style.display='none'; m.innerHTML=''; } }
 function renderClienteScheda(D,c){
   const aperte=c._prat.filter(p=>!/CHIUS|CONCLUS/i.test(p.stato||''));
   const maxatt=(c._maxatt!=null&&c._maxatt>=0)?c._maxatt:(c._att.length?Math.max(...c._att):null);
@@ -2547,6 +2737,8 @@ function renderClienteScheda(D,c){
       ${CH[c.cliente]?`<button class="act" id="s-riapri">Riapri, è chiusa dal ${esc(CH[c.cliente].data)}</button>`:''}
     </div>
     <div id="boxchiusura"></div>
+    <h4 class="minih">Sveglie</h4>
+    <div id="svebox">${riquadroSveglie(c)}</div>
     <h4 class="minih">Lavorazioni</h4>
     <div id="lavbox">${riquadroLavorazioni(c)}</div>
 
@@ -2607,6 +2799,11 @@ function renderClienteScheda(D,c){
     <div class="box warn"><div class="k">In una versione completa qui ci sarebbero anche</div>
       documenti del cliente, email agganciate alle sue pratiche, preventivi e fatture con lo stato dei pagamenti, e la cronologia dei contatti.</div>`;
   [...D.querySelectorAll('.prat')].forEach(b=>b.onclick=()=>{state.sel=+b.dataset.i;setView('prat');render();});
+
+  (()=>{ const nuova=D.querySelector('#svenuova');
+    if(nuova) nuova.onclick=()=>formSveglia(c);
+    [...D.querySelectorAll('[data-svetogli]')].forEach(b=>b.onclick=()=>togliSveglia(c.cliente, +b.dataset.svetogli));
+  })();
 
   dipingiUrgbar(c, D);
   (()=>{ const box=D.querySelector('#immcli'); if(!box) return;
@@ -3197,9 +3394,65 @@ const MOTIVI=[['CAT','Catasto','--c-cat'],['URB','Urbanistica','--c-urb'],['DD',
   ['RIL','Rilievo architettonico','--c-ril'],['CON','Consulenza','--c-sop'],['CAN','Cantiere','--c-can'],['ALT','Altro','']];
 const URG=[['1','Urgente','u1'],['2','Da fare a breve','u2'],['3','Normale','u3'],['4','Quando capita','u4']];
 const nuovo={motivi:new Set(), urg:'3', nome:'', comune:'', note:''};
+function salvaNuove(){
+  try{ localStorage.setItem('urg-nuove', JSON.stringify(NUOVE)); }catch(e){}
+  if(DB){ ECO['stato/nuove']=Date.now(); DB.doc('stato/nuove').set({v:NUOVE}).catch(()=>{}); }
+}
+function codiceNuovo(){
+  const base=DATA.pratiche.reduce(function(m,p){ const n=parseInt(p.id,10); return isNaN(n)?m:Math.max(m,n); },0);
+  const com=String(nuovo.comune||'').trim();
+  return {num:base+1,
+    cod:'2026-'+String(base+1).padStart(3,'0')+'_'+((com||'COMUNE').toUpperCase().replace(/\s+/g,''))+'_'+([...nuovo.motivi][0]||'CAT')};
+}
+function anteprimaNuovo(){
+  const q=codiceNuovo();
+  return '<div class="k">Premendo crea, succede questo</div><ul>'+
+    '<li>'+(nuovo.motivi.size||1)+' pratic'+(nuovo.motivi.size>1?'he':'a')+' nuov'+(nuovo.motivi.size>1?'e':'a')+
+      ', la prima con codice <code>'+esc(q.cod)+'</code></li>'+
+    '<li>Riga nel registro con priorita\' '+nuovo.urg+' e stato da avviare</li>'+
+    '<li>La trovi subito in Pratiche e nella scheda del cliente</li>'+
+    '<li>Cartella sul computer ed etichetta Gmail <code>Pratiche/2026-'+String(q.num).padStart(3,'0')+'</code> restano da fare a mano</li>'+
+    (nuovo.urg==='1'?'<li>Conviene metterci subito una sveglia dalla scheda del cliente</li>':'')+
+    '</ul>';
+}
+function aggiornaAnteprima(){
+  const e=document.getElementById('nprev'); if(e) e.innerHTML=anteprimaNuovo();
+}
+function creaContatto(){
+  const nome=String(nuovo.nome||'').trim();
+  if(!nome){ toast('Scrivi almeno il nome del cliente'); return; }
+  const motivi=[...nuovo.motivi]; if(!motivi.length) motivi.push('CAT');
+  const com=String(nuovo.comune||'').trim();
+  const base=DATA.pratiche.reduce(function(m,p){ const n=parseInt(p.id,10); return isNaN(n)?m:Math.max(m,n); },0);
+  const fatte=[];
+  motivi.forEach(function(k,i){
+    const num=base+1+i;
+    const p={
+      id:String(num),
+      codice:'2026-'+String(num).padStart(3,'0')+'_'+(com||'COMUNE').toUpperCase().replace(/\s+/g,'')+'_'+k,
+      cartella:'** CARTELLA DA CREARE **',
+      cliente:nome, immobile:com, cat:k,
+      dettaglio:(MOTIVI.find(function(m){ return m[0]===k; })||[,''])[1],
+      stato:'DA AVVIARE', prio:String(nuovo.urg),
+      azione:String(nuovo.note||'').trim(), scadenza:'', ggscad:'',
+      attesadi:'', dachi:'', attesadal:'', ggattesa:'', bloccata:'',
+      contattare:nome, onorario:'', pagam:'',
+      note:String(nuovo.note||'').trim(),
+      ultimocontatto:oggiISO(), nfile:'', ndoc:'', ultimodoc:'',
+      fonte:'creata dall\'app', creata:oggiISO(), nuova:true
+    };
+    NUOVE.push(p); fatte.push(p);
+  });
+  salvaNuove();
+  try{ window.preparaTutto(); ricalcolaUrgenze(); }catch(e){}
+  nuovo.motivi=new Set(); nuovo.urg='3'; nuovo.nome=''; nuovo.comune=''; nuovo.note='';
+  toast(fatte.length>1?(fatte.length+' pratiche create per '+nome):('Pratica '+fatte[0].codice+' creata'));
+  const cl=DATA.clienti.find(function(c){ return norm(c.cliente)===norm(nome); });
+  state.csel = cl ? cl._i : null;
+  state.urgTmp=null; setView('home'); render(); scrollTop0();
+}
 function renderNew(){
   const V=document.getElementById('view-new');
-  const cod=`2026-${String(DATA.pratiche.length+1).padStart(3,'0')}_${(nuovo.comune||'COMUNE').toUpperCase().replace(/\s+/g,'')}_${[...nuovo.motivi][0]||'CAT'}`;
   V.innerHTML=`
     <h2 class="sec">Nuovo contatto</h2>
     <div class="form">
@@ -3217,28 +3470,20 @@ function renderNew(){
       <span class="fl">Cosa ha chiesto</span>
       <textarea id="nnote" rows="3" placeholder="Due righe, anche buttate giù male">${esc(nuovo.note)}</textarea>
 
-      <div class="preview">
-        <div class="k">Premendo crea, succede questo</div>
-        <ul>
-          <li>${nuovo.motivi.size||1} pratic${nuovo.motivi.size>1?'he':'a'} nuov${nuovo.motivi.size>1?'e':'a'}, la prima con codice <code>${esc(cod)}</code></li>
-          <li>Cartella creata sul PC sotto il cliente, con le sottocartelle già dentro</li>
-          <li>Riga nel registro con priorità ${nuovo.urg} e stato da avviare</li>
-          <li>Etichetta Gmail <code>Pratiche/2026-${String(DATA.pratiche.length+1).padStart(3,'0')}</code>, e le email di questo cliente ci finiscono da sole</li>
-          ${nuovo.urg==='1'?'<li>Promemoria sul calendario per domani mattina, perché è urgente</li>':''}
-        </ul>
-      </div>
+      <div class="preview" id="nprev">${anteprimaNuovo()}</div>
       <div class="wrapg" style="margin-top:18px">
-        <button class="u-chip u3" style="background:var(--accent);border-color:var(--accent);color:var(--on-accent)">Crea</button>
+        <button class="u-chip u3" id="ncrea" style="background:var(--accent);border-color:var(--accent);color:var(--on-accent)">Crea</button>
       </div>
-      <p style="font-size:13px;color:var(--muted);margin-top:10px">In questo prototipo il pulsante non crea niente davvero, serve a farti vedere il flusso.</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:10px">La pratica viene salvata subito e la trovi in Pratiche e in Clienti. La cartella sul computer e l'etichetta Gmail restano da fare a mano.</p>
     </div>`;
+  V.querySelector('#ncrea').onclick=creaContatto;
   [...V.querySelectorAll('#gmot button')].forEach((b,i)=>b.onclick=()=>{
     const k=MOTIVI[i][0]; nuovo.motivi.has(k)?nuovo.motivi.delete(k):nuovo.motivi.add(k); renderNew();});
   [...V.querySelectorAll('#gurg button')].forEach((b,i)=>b.onclick=()=>{nuovo.urg=URG[i][0];renderNew();});
+  /* niente ridisegno mentre scrivi: aggiorno solo il riquadro di riepilogo */
   ['nnome','ncom','nnote'].forEach((id,i)=>{
     const el=V.querySelector('#'+id);
-    el.oninput=e=>{nuovo[['nome','comune','note'][i]]=e.target.value;};
-    el.onblur=()=>renderNew();
+    el.oninput=e=>{ nuovo[['nome','comune','note'][i]]=e.target.value; aggiornaAnteprima(); };
   });
 }
 
@@ -5228,7 +5473,15 @@ function salvaMod(id){
   const c=stato(S.can), l=c.lav.find(x=>x.id===id);
   if(prendiCampi(id)) nota("Modificata la lavorazione "+l.n+".",id);
   ricordaScelta(l);
-  salva(); chiudiModale(); render(); toast("Salvato");
+  salva(); chiudiModale();
+  /* appena nata da una foto e ancora senza posizione: la metto sulla pianta */
+  if(l && l.daNominare && !l.pin && piantaAttiva()){
+    delete l.daNominare;
+    posiziona(id);
+    return;
+  }
+  if(l) delete l.daNominare;
+  render(); toast("Salvato");
 }
 function elimina(id){
   if(S.canc!==id){ S.canc=id; chiudiModale(); render(); toast("Premi di nuovo Rimuovi per confermare"); return; }
@@ -5504,6 +5757,12 @@ function fotoA(id){
   S.foto=null; S.dis=false; S.sub="pianta"; S.sel=id;
   salva(); chiudiModale(); render();
   toast(lista.length>1?(lista.length+" foto messe sulla "+l.n):("Foto messa sulla "+l.n));
+  /* se quella lavorazione non sta ancora sulla pianta, glielo chiedo subito */
+  if(!l.pin && piantaAttiva()){
+    modale("La "+l.n+" non e' sulla pianta","vuoi metterci il pin adesso?",
+      '<button class="cbtn pri" onclick="CA.chiudiModale();CA.posiziona('+id+')">Si, la metto sulla pianta</button>'+
+      '<button class="cbtn" onclick="CA.chiudiModale()">Piu\' tardi</button>');
+  }
 }
 function fotoNuovaDa(){
   const lista=FOTOATTESA||[]; FOTOATTESA=null;
@@ -5519,7 +5778,7 @@ function fotoNuovaDa(){
   S.foto=null; S.dis=false; S.sub="pianta"; S.sel=l.id;
   salva(); chiudiModale(); render();
   modifica(l.id);
-  toast("Dalle un nome, si salva da solo");
+  toast("Dalle un nome, poi ti faccio metterla sulla pianta");
 }
 function fotoAnnulla(){ FOTOATTESA=null; chiudiModale(); toast("Foto scartata"); }
 /* mette in fila piu' foto sulla stessa lavorazione, senza aprirle una a una */
