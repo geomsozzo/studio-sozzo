@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-0944";</script>
+<script>window.VERSIONE="v20260909-1115";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -3489,6 +3489,19 @@ setView('home'); render();
 #view-can .cleg i{width:14px;height:14px;border-radius:50%;flex:none;}
 #view-can .cleg i.fade{background:var(--cfaint);opacity:.45;}
 #view-can .cleg i.nuovo{background:var(--cs3);box-shadow:0 0 0 2.5px var(--ctext);}
+/* menu a tendina sotto la pianta, telefono */
+#view-can .ctend{margin-top:10px;border:1px solid var(--cline2);border-radius:10px;background:var(--cs);overflow:hidden;}
+#view-can .ctend>summary{list-style:none;cursor:pointer;padding:13px 15px;font-size:15px;font-weight:700;
+  color:#134B66;background:#E4EEF9;display:flex;align-items:center;justify-content:space-between;}
+#view-can .ctend>summary::-webkit-details-marker{display:none;}
+#view-can .ctend[open]>summary span{transform:rotate(180deg);}
+#view-can .ctend>summary span{transition:transform .15s;}
+#view-can .ctendv{padding:10px 12px 12px;display:grid;gap:8px;}
+#view-can .ctendv .cbtn,#view-can .ctendv .cupl{width:100%;margin:0;padding:13px;font-size:15px;}
+#view-can .cleg .clegm{gap:4px;font-weight:600;}
+#view-can .cleg .clegm i{width:12px;height:12px;}
+#view-can .cleg .clegm i+i{margin-left:-2px;}
+#view-can .cleg .clegm i:last-of-type{margin-right:4px;}
 
 #view-can .cscheda{border:1px solid var(--cline);border-radius:8px;padding:13px 14px 14px;background:var(--cs);}
 #view-can .cscheda h4{margin:0 0 3px;font-size:18px;letter-spacing:-.02em;}
@@ -3993,6 +4006,17 @@ function pins(list,spenti){
  const s=(spenti||[]).map(l=>'<span class="pin off" style="left:'+(l.pin.x/800*100)+'%;top:'+(l.pin.y/560*100)+'%;background:'+CATS[l.cat].c+'">'+l.n+'</span>').join("");
  return s+a;}
 function legenda(cs){return cs.map(c=>'<span><i style="background:'+CATS[c].c+'"></i>'+esc(CATS[c].b)+'</span>').join("");}
+/* legenda per mestiere: il nome del mestiere e i pallini delle sue categorie in pianta */
+function legendaMest(cs){
+  const usate=[...new Set(cs)];
+  return MEST.map(function(m){
+    const mie=usate.filter(function(k){ return m.c.indexOf(k)>=0; });
+    if(!mie.length) return '';
+    return '<span class="clegm">'+mie.map(function(k){
+      return '<i title="'+esc(CATS[k].n)+'" style="background:'+CATS[k].c+'"></i>'; }).join("")+
+      esc(m.l)+'</span>';
+  }).join("");
+}
 
 /* ---- pianta di esempio ---- */
 function svgEsempio(){return '<svg viewBox="0 0 800 560"><rect width="800" height="560" fill="#fff"/>'+
@@ -4246,8 +4270,13 @@ function fotoNuova(){
   if(!S.can) return;
   apriFotocamera(function(f){ leggiScatto(f, function(im, src){ nuovaDaFoto(im, src); }); });
 }
+function chipTuttiMest(){
+  const tutti=S.mest.length===MEST.length;
+  return '<button class="cchip'+(tutti?" on":"")+'" onclick="CA.mestTutti()">'+
+    (tutti?"Chiudi tutti i mestieri":"Tutti i mestieri")+' <b>'+MEST.length+'</b></button>';
+}
 function mestScroll(c){
-  return '<div class="cscroll">'+MEST.map(function(m){
+  return '<div class="cscroll">'+chipTuttiMest()+MEST.map(function(m){
     const ls=c.lav.filter(function(l){ return m.c.indexOf(l.cat)>=0; });
     const ap=ls.filter(function(l){ return l.stato!=="verificata"; }).length;
     const col=ls.length?CATS[ls[0].cat].c:CATS[m.c[0]].c, on=S.mest.indexOf(m.id)>=0;
@@ -4310,8 +4339,7 @@ function vistaPianta(c){
          ?'Tocca la pianta per attivarla. Con il dito la pagina scende.'
          :'Tocca la pianta per aggiungere un pin. Pizzica per ingrandire.')+'</div>')+
       vista(livello(p)+pins(acc,spe),p.ar||800/560)+
-      '<div class="cleg">'+legenda([...new Set(acc.map(l=>l.cat))])+'<span>'+TRIL+'urgente</span>'+
-      '<span><i class="fade"></i>da iniziare</span><span><i class="nuovo"></i>nuovo</span></div></div>'
+      '<div class="cleg">'+legendaMest(acc.map(l=>l.cat))+'</div></div>'
     : '<div class="cpiano" style="padding:26px 18px;text-align:center">'+
       '<p style="margin:0 0 4px;font-weight:600">Nessuna tavola caricata</p>'+
       '<p class="chint" style="margin:0 0 14px">Carica il PDF della pianta di questo cantiere, oppure prova con quella di esempio.</p>'+
@@ -4335,6 +4363,7 @@ function vistaPianta(c){
       (tel()
         ?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+mestScroll(c)
         :(mest?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+
+          '<div class="cchips">'+chipTuttiMest()+'</div>'+
           '<div class="clist">'+mest+'</div>':""))+
       (dec.length?'<div class="csec">Aspettano una tua decisione<span class="n">'+dec.length+'</span></div><div class="clist">'+dec.map(riga).join("")+'</div>':"")+
       (tel()?'<div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'
@@ -4345,12 +4374,16 @@ function vistaPianta(c){
   if(tel()){
     if(S.sel) return '<div class="ctelback"><button class="cbtn" onclick="CA.chiudi()">&lsaquo; Torna alla pianta</button></div>'+scheda(S.sel);
     return piano+
-      (p?'<div class="cscroll" style="padding-top:9px">'+
-        '<button class="cbtn pri" style="width:auto;margin:0;padding:11px 16px;font-size:14px" onclick="CA.pieno(true)">Pianta a schermo intero</button>'+
-        '<label class="cupl" style="width:auto;margin:0;padding:11px 16px;font-size:14px">Carica tavola<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>'+
-        '<button class="cbtn" style="width:auto;margin:0;padding:11px 16px;font-size:14px" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
-        '<button class="cbtn" style="width:auto;margin:0;padding:11px 16px;font-size:14px" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi completate":"Mostra completate")+'</button>'+
-        '</div>':"")+
+      (p?'<details class="ctend">'+
+        '<summary>Pianta, altre cose<span>&#9662;</span></summary>'+
+        '<div class="ctendv">'+
+        '<button class="cbtn pri" onclick="CA.pieno(true)">Pianta a schermo intero</button>'+
+        '<label class="cupl">Carica una tavola<input type="file" accept="application/pdf,image/*" hidden onchange="CA.carica(this)"></label>'+
+        '<button class="cbtn" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
+        '<button class="cbtn" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi le completate":"Mostra le completate")+'</button>'+
+        '<button class="cbtn" onclick="CA.esportaPianta()">Esporta la pianta</button>'+
+        '<button class="cbtn" onclick="CA.report()">Stampa il report</button>'+
+        '</div></details>':"")+
       destra;
   }
   return '<div class="c2"><div class="ccol">'+piano+
@@ -4694,6 +4727,13 @@ function mest(id){
   if(!id){ S.mest=[]; } else { togli(S.mest,id); S.cat=S.cat.filter(function(k){ return inMest({cat:k}); }); }
   S.sel=null; render();
 }
+/* apre tutti i mestieri insieme, oppure li richiude */
+function mestTutti(){
+  const tutti=MEST.map(function(m){ return m.id; });
+  if(S.mest.length===tutti.length){ S.mest=[]; S.tutteLav=false; }
+  else { S.mest=tutti; S.cat=[]; S.tutteLav=true; }
+  S.sel=null; render();
+}
 /* sul telefono le lavorazioni si vedono solo quando scegli una categoria,
    altrimenti la pagina diventa un muro di testo */
 function vedoLav(){ return S.cat.length>0 || S.mest.length>0 || !!S.tutteLav; }
@@ -4737,14 +4777,38 @@ function avanza(id,st,pct){
   nota(t[st]||"Stato aggiornato.",id); salva(); render(); toast("Aggiornato");
 }
 function posiziona(id){ S.pos=id; S.sel=null; S.sub="pianta"; render(); toast("Tocca il punto sulla pianta"); }
+/* il mestiere decide quali categorie compaiono sotto */
+function bloccoCat(mid, val){
+  const m=MEST.find(function(x){ return x.id===mid; }) || MEST[0];
+  const ks=m.c.filter(function(k){ return !!CATS[k]; });
+  return '<div class="cfield" id="ca-catbox"><label>Categoria</label>'+
+    '<select id="ca-c" onchange="CA.aggiornaImpresa()">'+
+    ks.map(function(k){ return '<option value="'+k+'"'+(val===k?' selected':'')+'>'+esc(CATS[k].n)+'</option>'; }).join("")+
+    '</select></div>';
+}
+function aggiornaCat(){
+  const sel=el("ca-m"), box=el("ca-catbox");
+  if(!sel||!box) return;
+  const t=document.createElement("div");
+  t.innerHTML=bloccoCat(sel.value, null);
+  box.parentNode.replaceChild(t.firstChild, box);
+  aggiornaImpresa();
+}
+function selMest(mid){
+  return '<div class="cfield"><label>Mestiere</label><select id="ca-m" onchange="CA.aggiornaCat()">'+
+    MEST.map(function(m){ return '<option value="'+m.id+'"'+(mid===m.id?' selected':'')+'>'+esc(m.l)+'</option>'; }).join("")+
+    '</select></div>';
+}
 function formPin(x,y){
+  const mid = MEST[0].id;
   modale("Nuova lavorazione","posizione x "+x+", y "+y+" sulla tavola",
-   '<div class="cfield"><label>Categoria</label><select id="ca-c" onchange="CA.aggiornaImpresa()">'+Object.keys(CATS).map(k=>'<option value="'+k+'">'+esc(CATS[k].n)+'</option>').join("")+'</select></div>'+
-   bloccoImpresa(Object.keys(CATS)[0], null)+
+   selMest(mid)+
+   bloccoCat(mid, null)+
    '<div class="cfield"><label>Ambiente</label><input id="ca-l" placeholder="Es. bagno"></div>'+
    '<div class="cfield"><label>Descrizione</label><input id="ca-t" placeholder="Es. rifacimento soglia in pietra leccese"></div>'+
    '<div class="cfield"><label>Urgenza</label><select id="ca-u"><option value="normale">Normale</option><option value="urgente">Urgente</option><option value="bloccante">Bloccante</option></select></div>'+
    '<div class="cfield"><label>Nota</label><textarea id="ca-n" placeholder="Quello che diresti a voce sul posto"></textarea></div>'+
+   bloccoImpresa(MEST[0].c[0], null)+
    '<button class="cbtn pri" onclick="CA.creaPin('+x+','+y+')">Crea il pin</button>'+
    '<button class="cbtn" onclick="CA.chiudiModale()">Annulla</button>');
 }
@@ -5208,21 +5272,24 @@ function galleria(l){ if(!Array.isArray(l.gal)) l.gal=[]; return l.gal; }
 function fotoDaFile(input, id, modo2){
   if(SCATTO) SCATTO.preso=true;
   SCATTO=null;
-  const f=input&&input.files&&input.files[0];
+  const tutti=input&&input.files?[].slice.call(input.files):[];
+  const f=tutti[0];
   try{ input.value=""; }catch(e){}
   if(!f){ toast("Nessuna foto scelta"); return; }
+  /* piu' foto insieme: le metto tutte nella galleria della lavorazione */
+  const dove = id || S.sel || null;
+  if(tutti.length>1 && dove){ piuFoto(tutti, dove); return; }
   if(id&&modo2==="agg"){
+    /* foto in aggiunta: resta nella scheda, cosi' ne puoi scattare altre di seguito.
+       Per scriverci sopra basta toccarla nella striscia. */
     leggiScatto(f, function(im, src){
       const c=stato(S.can), l=c.lav.find(function(x){ return x.id===id; }); if(!l) return;
-      if(!l.fsrc){
-        S.foto={src:src,ar:im.width/im.height,m:[],tr:[],lav:id,idx:null};
-      } else {
-        const g=galleria(l);
-        g.push({src:src,ar:im.width/im.height,m:[],tr:[],q:oggi()});
-        S.foto={src:g[g.length-1].src,ar:g[g.length-1].ar,m:[],tr:[],lav:id,idx:g.length-1};
-      }
-      S.dis=false; S.sub="foto"; S.sel=null; salva(); render();
-      toast("Foto aggiunta, segna i punti e salva");
+      if(!l.fsrc){ l.fsrc=src; l.far=im.width/im.height; l.fm=[]; l.ftr=[]; }
+      else galleria(l).push({src:src,ar:im.width/im.height,m:[],tr:[],q:oggi()});
+      l.agg=oggi();
+      const quante=1+galleria(l).length;
+      S.foto=null; S.dis=false; S.sub="pianta"; S.sel=id; salva(); render();
+      toast("Foto aggiunta, sono "+quante+". Toccala per scriverci sopra.");
     });
     return;
   }
@@ -5250,6 +5317,35 @@ function fotoDaFile(input, id, modo2){
     return;
   }
   leggiScatto(f, function(im, src){ nuovaDaFoto(im, src); });
+}
+/* mette in fila piu' foto sulla stessa lavorazione, senza aprirle una a una */
+function piuFoto(files, id){
+  const c=stato(S.can), l=c.lav.find(function(x){ return x.id===id; });
+  if(!l){ toast("Lavorazione non trovata"); return; }
+  let messe=0, i=0;
+  toast("Carico "+files.length+" foto…");
+  (function prossima(){
+    if(i>=files.length){
+      l.agg=oggi();
+      nota("Aggiunte "+messe+" foto alla lavorazione "+l.n+".", l.id);
+      S.sub="pianta"; S.sel=l.id; S.foto=null; S.dis=false;
+      salva(); render();
+      toast(messe+" foto aggiunte. Toccane una per scriverci sopra.");
+      return;
+    }
+    const f=files[i++];
+    let andata=false;
+    /* se una foto non si legge, dopo un po' passo alla successiva */
+    const salvagente=setTimeout(function(){ if(!andata){ andata=true; prossima(); } }, 12000);
+    leggiScatto(f, function(im, src){
+      if(andata) return;
+      andata=true; clearTimeout(salvagente);
+      if(!l.fsrc){ l.fsrc=src; l.far=im.width/im.height; l.fm=[]; l.ftr=[]; }
+      else galleria(l).push({src:src, ar:im.width/im.height, m:[], tr:[], q:oggi()});
+      messe++;
+      prossima();
+    });
+  })();
 }
 function nuovaDaFoto(im, src){
   const c=stato(S.can), p=piantaAttiva();
@@ -6221,9 +6317,9 @@ function scattoAtteso(){
 function campoScatto(dentro, classe, id, modo2, cam){
   const arg = id ? (','+id+(modo2?",'"+modo2+"'":'')) : (modo2?",null,'"+modo2+"'":'');
   return '<span class="cscatto '+(classe||"")+'">'+dentro+
-    '<input type="file" accept="image/*"'+(cam?' capture="environment"':'')+
+    '<input type="file" accept="image/*"'+(cam?' capture="environment"':' multiple')+
     ' onclick="CA.scattoAtteso()" onchange="CA.fotoDaFile(this'+arg+')" '+
-    'aria-label="'+(cam?"Scatta una foto":"Scegli una foto")+'"></span>';
+    'aria-label="'+(cam?"Scatta una foto":"Scegli una o piu\' foto")+'"></span>';
 }
 function sceltaFoto(id){
   const idn = id ? id : 'null';
@@ -6257,8 +6353,10 @@ function strisciaFoto(l){
   if(!l.fsrc&&!g.length) return '';
   const tutte=[].concat(l.fsrc?[{src:l.fsrc,i:null,n:(l.fm||[]).length}]:[],
     g.map(function(x,i){ return {src:x.src,i:i,n:(x.m||[]).length}; }));
-  if(tutte.length<2) return '';
-  return '<div class="cgal">'+tutte.map(function(x,k){
+  if(!tutte.length) return '';
+  return '<div class="csec">Foto della lavorazione<span class="n">'+tutte.length+
+    (tutte.length>1?' foto, tocca quella da modificare':' foto')+'</span></div>'+
+    '<div class="cgal">'+tutte.map(function(x,k){
     return '<button onclick="'+(x.i==null?'CA.fotoApri('+l.id+')':'CA.galApri('+l.id+','+x.i+')')+'">'+
       '<img src="'+x.src+'" alt="">'+(x.n?'<i>'+x.n+'</i>':'')+'<u>'+(k+1)+'</u></button>'; }).join("")+'</div>';
 }
@@ -6284,7 +6382,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
  carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
