@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1115";</script>
+<script>window.VERSIONE="v20260909-1127";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -1025,7 +1025,6 @@
       <button role="tab" data-view="ord" aria-selected="false">Ordini</button>
       <button role="tab" data-view="age" aria-selected="false">Agenda</button>
       <button id="newbtn" class="newbtn">+ Nuovo contatto</button>
-      <button id="altrobtn" type="button">Altro</button>
     </div>
   </div>
 
@@ -3380,6 +3379,7 @@ setView('home'); render();
 #view-can .ccath i{width:10px;height:10px;border-radius:50%;flex:none;}
 #view-can .ccath .n{margin-left:auto;font-weight:600;color:var(--cfaint);text-transform:none;letter-spacing:0;}
 /* riquadro vero attorno a ogni categoria */
+#view-can .crep{margin-top:14px;}
 #view-can .cgruppo{border:1px solid var(--cline2);border-left:4px solid var(--cbordo,var(--cline2));
   border-radius:10px;background:var(--cs2);padding:2px 10px 10px;margin:0 0 12px;}
 #view-can .cgruppo .ccath{margin:9px 0 7px;}
@@ -3497,7 +3497,11 @@ setView('home'); render();
 #view-can .ctend[open]>summary span{transform:rotate(180deg);}
 #view-can .ctend>summary span{transition:transform .15s;}
 #view-can .ctendv{padding:10px 12px 12px;display:grid;gap:8px;}
-#view-can .ctendv .cbtn,#view-can .ctendv .cupl{width:100%;margin:0;padding:13px;font-size:15px;}
+#view-can .ctendv>.cbtn,#view-can .ctendv>.cupl{width:100%;margin:0;padding:13px;font-size:15px;}
+#view-can .ctend>summary .ctendn{margin-left:auto;margin-right:10px;font-weight:600;color:#3E6A87;font-size:13.5px;}
+#view-can .ctendv .cscroll{margin:0;}
+#view-can .ctendv .cchips{margin:0;}
+#view-can .ctendv .csec:first-child{margin-top:0;}
 #view-can .cleg .clegm{gap:4px;font-weight:600;}
 #view-can .cleg .clegm i{width:12px;height:12px;}
 #view-can .cleg .clegm i+i{margin-left:-2px;}
@@ -3690,21 +3694,20 @@ setView('home'); render();
 #view-can .cgal u{position:absolute;left:3px;bottom:3px;text-decoration:none;background:rgba(12,22,32,.72);color:#fff;
   min-width:17px;height:17px;border-radius:999px;font-size:10.5px;display:grid;place-items:center;padding:0 4px;}
 @media(max-width:760px){
-  /* due porte grandi, Scrivania e Cantieri, il resto sotto Altro */
-  .views{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 0;}
+  /* due porte grandi, Scrivania e Cantieri, e basta */
+  .top{padding:10px 0 8px;gap:8px;}
+  .views{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0;margin:0;}
   .views button{display:none;}
   .views .brk{display:none;}
-  .views button[data-view="home"],.views button[data-view="can"],#altrobtn{display:block;}
+  .views button[data-view="home"],.views button[data-view="can"]{display:block;}
   .views button[data-view="home"],.views button[data-view="can"]{
     font-size:16.5px;font-weight:700;letter-spacing:-.01em;padding:15px 10px;border-radius:13px;
     background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);text-align:center;}
   .views button[data-view="home"][aria-selected="true"],
   .views button[data-view="can"][aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent);}
-  #altrobtn{grid-column:1 / -1;font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);
-    background:transparent;border:0;padding:9px 0 2px;text-align:center;}
   .views.aperta button{display:block;}
   .views.aperta{grid-template-columns:1fr 1fr;}
-  .views.aperta button:not([data-view="home"]):not([data-view="can"]):not(#altrobtn){
+  .views.aperta button:not([data-view="home"]):not([data-view="can"]){
     font-size:14.5px;font-weight:600;padding:12px 8px;border-radius:11px;
     background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line);text-align:center;}
   .views.aperta #newbtn{grid-column:1 / -1;}
@@ -3722,6 +3725,7 @@ setView('home'); render();
   #view-can .csub2{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:11px 0 6px;scrollbar-width:none;}
   #view-can .csub2::-webkit-scrollbar{display:none;}
   #view-can .csub2 button{flex:none;padding:11px 16px;font-size:14px;}
+  #view-can .cbarra.due{grid-template-columns:repeat(2,1fr);}
   #view-can .cbarra{position:fixed;left:0;right:0;bottom:0;z-index:140;display:grid;grid-template-columns:repeat(4,1fr);
     gap:7px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:rgba(251,253,255,.97);
     border-top:1px solid var(--cline2);box-shadow:0 -4px 18px rgba(10,30,50,.14);}
@@ -3926,7 +3930,8 @@ const CKB=[["Prima dell'apertura","Notifica preliminare trasmessa","ASL e Ispett
  ["Gestione","Occupazione di suolo pubblico","Se il ponteggio invade la strada",0],
  ["Gestione","Polizza CAR e responsabilita civile","Copia in cantiere, massimali",0]];
 
-let S={dis:false,col:"#E01B0F",filtro:null,can:null,sub:"pianta",sel:null,mest:[],cat:[],arch:false,fatte:false,pos:null,modSel:null,en:false,foto:null};
+let S={dis:false,col:"#E01B0F",filtro:null,can:null,sub:"pianta",sel:null,mest:[],cat:[],arch:false,fatte:false,pos:null,modSel:null,en:false,foto:null,
+  tende:{lav:true,mest:false}};
 const inMest=function(l){ return !S.mest.length || S.mest.indexOf(mestDi(l.cat))>=0; };
 const inCat=function(l){ return !S.cat.length || S.cat.indexOf(l.cat)>=0; };
 const filtrata=function(l){ return inCat(l) && inMest(l); };
@@ -4239,11 +4244,11 @@ function suQuestaTavola(l,p){ return !!l.pin && (!p || !l.piana || l.piana===p.i
 function tel(){ return window.innerWidth<=760; }
 function barraTel(){
   if(!S.can||S.sub==="foto"||S.full) return '';
-  return '<div class="cbarra">'+
+  /* solo due tasti fissi: la nota si scrive nella scheda del pin,
+     il report sta in fondo alle lavorazioni attive */
+  return '<div class="cbarra due">'+
     '<button class="pri" onclick="CA.sceltaFoto()"><b>&#128247;</b>Foto</button>'+
-    '<button onclick="CA.pinModo()"><b>&#128205;</b>Pin</button>'+
-    '<button onclick="CA.notaRapida()"><b>&#128221;</b>Nota</button>'+
-    '<button onclick="CA.report()"><b>&#128196;</b>Report</button></div>';
+    '<button onclick="CA.pinModo()"><b>&#128205;</b>Pin</button></div>';
 }
 function pieno(v){ S.full=!!v; if(S.full){ S.sel=null; S.sub="pianta"; } else { S.rot=false; } render(); }
 function ruota(){ S.rot=!S.rot; render(); }
@@ -4269,6 +4274,17 @@ function notaSalva(){
 function fotoNuova(){
   if(!S.can) return;
   apriFotocamera(function(f){ leggiScatto(f, function(im, src){ nuovaDaFoto(im, src); }); });
+}
+/* tendine del telefono: si ricordano se erano aperte */
+function tendina(chiave, titolo, conta, dentro){
+  const ap = S.tende && S.tende[chiave];
+  return '<details class="ctend"'+(ap?' open':'')+' ontoggle="CA.tendina(\''+chiave+'\',this.open)">'+
+    '<summary>'+esc(titolo)+(conta?'<b class="ctendn">'+esc(conta)+'</b>':'')+'<span>&#9662;</span></summary>'+
+    '<div class="ctendv">'+dentro+'</div></details>';
+}
+function tendinaTog(chiave, aperta){
+  if(!S.tende) S.tende={};
+  S.tende[chiave]=!!aperta;
 }
 function chipTuttiMest(){
   const tutti=S.mest.length===MEST.length;
@@ -4353,7 +4369,8 @@ function vistaPianta(c){
             : '<p class="chint">Scegli una categoria qui sopra per vederne le lavorazioni. Puoi sceglierne piu\' di una, oppure premere Tutte.</p>')
         : '<p class="chint">'+((S.cat.length||S.mest.length)?"Nessuna lavorazione aperta con questo filtro.":"Nessuna lavorazione. Parti dall\'elenco tipo.")+'</p>')+
       (fat.length?'<button class="csec" style="width:100%" onclick="CA.archTog()">Archivio, completate<span class="n">'+fat.length+(S.arch?" &#9662;":" &#9656;")+'</span></button>'+
-        (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):"");
+        (S.arch?'<div class="clist">'+fat.map(riga).join("")+'</div>':""):"")+
+      (att.length?'<button class="cbtn pri crep" onclick="CA.report()">Report di queste '+att.length+' lavorazioni</button>':"");
   const destra=(S.sel?scheda(S.sel):
       (S.mest.length?S.mest.map(function(id){
         const ds=ditteDi(c,id), m=MEST.find(function(x){ return x.id===id; });
@@ -4361,16 +4378,21 @@ function vistaPianta(c){
           (ds.length?ds.map(function(d){ return schedaDitta(d,true); }).join("")
             :'<p class="cdvuota">Nessuna ditta assegnata. Aprila dalla linguetta Ditte.</p>'); }).join(""):"")+
       (tel()
-        ?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+mestScroll(c)
+        ?tendina('mest', 'Mestieri', (S.mest.length?S.mest.length+' scelti':MEST.length+''),
+            (S.mest.length||S.cat.length?'<button class="cbtn" onclick="CA.azzeraFiltri()">Togli i filtri</button>':'')+
+            mestScroll(c))
         :(mest?'<div class="csec">Mestieri'+(S.mest.length||S.cat.length?'<button onclick="CA.azzeraFiltri()" style="color:var(--cacc);font-weight:600;font-size:12.5px">vedi tutti</button>':'')+'</div>'+
           '<div class="cchips">'+chipTuttiMest()+'</div>'+
           '<div class="clist">'+mest+'</div>':""))+
       (dec.length?'<div class="csec">Aspettano una tua decisione<span class="n">'+dec.length+'</span></div><div class="clist">'+dec.map(riga).join("")+'</div>':"")+
-      (tel()?'<div class="csec">Lavorazioni attive<span class="n">'+att.length+'</span></div>'
-            :'<div class="csec">Categorie</div>')+
-      pulsantiCat(c, usate, false)+
-      '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
-      (tel()?elencoLav:""));
+      (tel()
+        ?tendina('lav', 'Lavorazioni attive', String(att.length),
+            pulsantiCat(c, usate, false)+
+            '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'+
+            elencoLav)
+        :'<div class="csec">Categorie</div>'+
+         pulsantiCat(c, usate, false)+
+         '<button class="cbtn pri" onclick="CA.modello()">Aggiungi lavorazioni dall\'elenco tipo</button>'));
   if(tel()){
     if(S.sel) return '<div class="ctelback"><button class="cbtn" onclick="CA.chiudi()">&lsaquo; Torna alla pianta</button></div>'+scheda(S.sel);
     return piano+
@@ -4382,7 +4404,6 @@ function vistaPianta(c){
         '<button class="cbtn" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
         '<button class="cbtn" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi le completate":"Mostra le completate")+'</button>'+
         '<button class="cbtn" onclick="CA.esportaPianta()">Esporta la pianta</button>'+
-        '<button class="cbtn" onclick="CA.report()">Stampa il report</button>'+
         '</div></details>':"")+
       destra;
   }
@@ -4392,7 +4413,6 @@ function vistaPianta(c){
       '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.tavole()">Tavole ('+c.piante.length+')</button>'+
       '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.fatteTog()">'+(S.fatte?"Nascondi completate":"Mostra completate")+'</button>'+
       '<button class="cbtn" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.esportaPianta()">Esporta la pianta</button>'+
-      '<button class="cbtn pri" style="width:auto;margin:0;padding:8px 13px;font-size:13px" onclick="CA.report()">Stampa report</button>'+
      '</div>':"")+
     '</div><div class="ccol">'+destra+
     '</div></div>'+
@@ -6382,7 +6402,7 @@ return {render:render,apri:apri,home:home,daCliente:daCliente,tuttiCantieri:func
  aggiornaImpresa:aggiornaImpresa,whats:whats,schedaImmagine:schedaImmagine,dittaApri:dittaApri,dittaChiudi:dittaChiudi,dittaMest:dittaMest,dittaSalva:dittaSalva,dittaElimina:dittaElimina,cercaDia:cercaDia,archTog:archTog,fatteTog:fatteTog,
  ck:ck,slider:slider,avanza:avanza,posiziona:posiziona,creaPin:creaPin,modifica:modifica,salvaMod:salvaMod,elimina:elimina,
  annullaCanc:annullaCanc,modello:modello,modTog:modTog,modTutte:modTutte,modAdd:modAdd,esempio:esempio,tavole:tavole,usaTavola:usaTavola,
- tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
+ tel:tel,pieno:pieno,bloccaPianta:bloccaPianta,ruota:ruota,aggiornaCat:aggiornaCat,mestTutti:mestTutti,formPin:formPin,tendina:tendinaTog,pinModo:pinModo,fotoDaFile:fotoDaFile,scattoAtteso:scattoAtteso,sceltaFoto:sceltaFoto,galApri:galApri,galElimina:galElimina,notaRapida:notaRapida,notaSalva:notaSalva,fotoNuova:fotoNuova,
  carica:carica,tavRinomina:tavRinomina,tavNome:tavNome,tavElimina:tavElimina,pct:pct,modMest:modMest,
  piantaLista:piantaLista,docNuovo:docNuovo,docApri:docApri,docRinomina:docRinomina,docNome:docNome,docElimina:docElimina,
  foto:foto,nota:notaFoto,salvaNota:salvaNota,elimNota:elimNota,salvaFoto:salvaFoto,annullaFoto:annullaFoto,salvaScheda:salvaScheda,riduciFoto:riduciFoto,statoDi:function(){return stato(S.can);},vistaOra:function(){return {sub:S.sub,sel:S.sel};},
