@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1458";</script>
+<script>window.VERSIONE="v20260909-1505";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -826,9 +826,11 @@
   .catfil .catbtn.spento:hover{box-shadow:0 0 0 3px var(--surface-3);}
   .catfil .catx{position:static;width:auto;height:auto;border-radius:999px;padding:6px 12px;
     font-family:var(--f);font-size:12.5px;font-weight:600;}
-  .catfiltop{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);}
-  /* sul telefono i filtri per tipo di lavoro non servono, rubano solo schermo */
-  @media(max-width:760px){ .catfiltop{display:none;} }
+  /* la fila dei tipi di lavoro sta solo nella scrivania, non nelle altre sezioni */
+  .catfiltop{display:none;margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);}
+  body[data-vista="home"] .catfiltop{display:flex;}
+  /* sul telefono non serve nemmeno li', ruba solo schermo */
+  @media(max-width:760px){ body[data-vista="home"] .catfiltop{display:none;} }
   /* finestra */
   .modale{position:fixed;inset:0;background:rgba(10,25,40,.45);display:flex;align-items:flex-start;
     justify-content:center;padding:5vh 16px;z-index:120;overflow-y:auto;}

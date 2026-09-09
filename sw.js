@@ -1,6 +1,6 @@
 /* Studio Sozzo, guardiano della pagina.
    Tiene una copia dell'app sul telefono, cosi' si apre anche senza campo. */
-const NOME = 'sozzo-20260909-1458';
+const NOME = 'sozzo-20260909-1505';
 const ROBA = [
   './',
   './index.html',
