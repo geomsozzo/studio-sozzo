@@ -12,7 +12,7 @@
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="icona-180.png">
 <title>Studio Sozzo</title>
-<script>window.VERSIONE="v20260909-1619";</script>
+<script>window.VERSIONE="v20260912-1319";</script>
 <style>
   html{color-scheme:light}
   body{margin:0;background:#D5E8F6;color:#16202A;
@@ -367,6 +367,9 @@
     watchTool: function(){ return function(){}; },
     collega: function(){ return gettone(true); },
     collegato: function(){ return !!(tok && scade>Date.now()); },
+    /* vero se il permesso c'e' gia' o se so a chi chiederlo senza far
+       comparire la finestra con l'elenco degli account */
+    puoProvare: function(){ return !!(tok && scade>Date.now()) || !!chiSei(); },
     scollega: function(){ butta(); }
   };
 })();
@@ -1094,6 +1097,12 @@
   .bkbtn:hover{border-color:var(--accent);color:var(--accent);}
   .bkbadge{font-family:var(--m);font-size:12px;color:var(--muted);}
   .bkbadge.vecchio{color:var(--red);font-weight:700;}
+  .brandaz{display:inline-flex;align-items:center;gap:7px;margin-left:auto;}
+  .bkbtn.agg{margin-left:0;}
+  .bkbtn.agg.gira{color:var(--accent);border-color:var(--accent);}
+  .bkbtn.agg.gira::before{content:"";width:11px;height:11px;border-radius:50%;
+    border:2px solid var(--accent);border-top-color:transparent;animation:aggiro .8s linear infinite;}
+  @keyframes aggiro{to{transform:rotate(360deg)}}
   .schedaz{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0;}
 .mailbox{display:flex;flex-direction:column;}
   .mailfonte{font-family:var(--m);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-bottom:6px;}
@@ -1146,7 +1155,7 @@
 
 <div class="app">
   <div class="top">
-    <div class="brand" id="brandhome" style="cursor:pointer"><i></i>Studio Sozzo <small id="vers">prototipo</small><span class="savedot" id="saved">…</span><span class="postaspia" id="postabadge" hidden></span><button class="bkbtn" id="bkbtn" title="Salva una copia dei tuoi dati su Google Drive">Backup <span class="bkbadge" id="bkstate">—</span></button></div>
+    <div class="brand" id="brandhome" style="cursor:pointer"><i></i>Studio Sozzo <small id="vers">prototipo</small><span class="savedot" id="saved">…</span><span class="postaspia" id="postabadge" hidden></span><span class="brandaz"><button class="bkbtn agg" id="aggbtn" title="Rilegge la posta e ricarica i dati">&#8635; Aggiorna</button><button class="bkbtn" id="bkbtn" title="Salva una copia dei tuoi dati su Google Drive">Backup <span class="bkbadge" id="bkstate">—</span></button></span></div>
     <div class="q"><input id="q" type="search" placeholder="Cerca cliente, comune, dettaglio"></div>
     <div class="views" role="tablist">
       <button role="tab" data-view="home" aria-selected="true" title="Torna alla schermata principale e azzera ricerca e filtri">Scrivania</button>
@@ -1939,6 +1948,8 @@ function clienteDaEmail(indirizzo, nomeSuggerito){
 }
 let GMAIL=[];            /* email lette da Gmail */
 let ULTIMASINC='';       /* orario ultima sincronizzazione */
+let ULTIMASINCMS=0;      /* quando, in millesimi, per non rileggere troppo spesso */
+let SINCINCORSO=false;
 const RX_SOLLECITO=/(urgent|sollecit|ancora in attesa|resto in attesa|non ho ricevut|come da accord|nessun riscontr|reminder|chasing|still waiting|any update|follow up)/i;
 const RX_OK=/(procediam|siamo d.accordo|confermo|va bene|possiamo procedere|go ahead|we agree|please proceed|d.accordo di procedere)/i;
 const RX_PROMESSA=/(ti aggiorno|la aggiorno|le faro sapere|le far. saper|ti faccio saper|entro domani|entro la settimana|nei prossimi giorni|i will send|i.ll get back|will update you)/i;
@@ -1958,6 +1969,8 @@ window.collegaGoogle=function(){
 };
 function sincronizzaPosta(){
   if(!MCP) return;
+  if(SINCINCORSO) return;
+  SINCINCORSO=true;
   spiaPosta('leggo la posta…');
   try{
     MCP.callTool('Gmail','search_threads',
@@ -1979,12 +1992,20 @@ function sincronizzaPosta(){
       });
       GMAIL=righe;
       ULTIMASINC=new Date().toTimeString().slice(0,5);
+      ULTIMASINCMS=Date.now(); SINCINCORSO=false;
       spiaPosta('aggiornata alle '+ULTIMASINC);
       aggiornaPosta();
       if(state.view==='home') renderHome();
-    }).catch(function(e){ guaioPosta(e); });
-  }catch(e){ guaioPosta(e); }
+    }).catch(function(e){ SINCINCORSO=false; guaioPosta(e); });
+  }catch(e){ SINCINCORSO=false; guaioPosta(e); }
 }
+/* rilegge la posta solo se e' passato abbastanza tempo */
+function forsePosta(forza){
+  if(!MCP) return;
+  if(!forza && Date.now()-ULTIMASINCMS < 7*60000) return;
+  sincronizzaPosta();
+}
+window.forsePosta=forsePosta;
 function guaioPosta(e){
   const k=e&&e.code;
   if(k==='needs_reauth'||k==='server_not_connected') spiaPosta('tocca qui per collegare Gmail');
@@ -3867,6 +3888,43 @@ document.getElementById('q').addEventListener('input',e=>{
   render();
 });
 document.getElementById('bkbtn').onclick=()=>backupDrive(true);
+/* Aggiorna: rilegge la posta, ricarica i dati dall'archivio e rifa la pagina */
+window.aggiornaTutto=function(){
+  const b=document.getElementById('aggbtn');
+  if(b){ b.classList.add('gira'); b.disabled=true; }
+  const fine=function(){
+    try{ preparaPratiche(); preparaClienti(); }catch(e){}
+    try{ if(window.CA && CA.render) CA.render(); }catch(e){}
+    try{ render(); }catch(e){}
+    try{ if(window.svuotaCoda) window.svuotaCoda(); }catch(e){}
+    if(b){ b.classList.remove('gira'); b.disabled=false; }
+    toast('Aggiornato');
+  };
+  let aspetto=[];
+  /* i dati arrivano gia' da soli dall'archivio, ma se eri senza campo
+     qui li richiedo subito invece di aspettare il prossimo cambiamento */
+  try{
+    if(window.DB && window.DB.doc){
+      ['stato/base','stato/cantieri','stato/nuove','stato/sveglie','stato/conti','stato/climod']
+        .forEach(function(d){ try{ aspetto.push(window.DB.doc(d).get()); }catch(e){} });
+    }
+  }catch(e){}
+  /* la posta */
+  try{
+    if(window.MCP){
+      ULTIMASINCMS=0;
+      if(window.MCPGOOGLE && !MCPGOOGLE.collegato() && !(MCPGOOGLE.puoProvare && MCPGOOGLE.puoProvare())){
+        MCPGOOGLE.collega().then(function(){ sincronizzaPosta(); }).catch(function(){});
+      } else {
+        sincronizzaPosta();
+      }
+    }
+  }catch(e){}
+  Promise.all(aspetto.map(function(p){ return (p&&p.then)?p.catch(function(){}):Promise.resolve(); }))
+    .then(function(){ setTimeout(fine, 900); })
+    .catch(function(){ setTimeout(fine, 900); });
+};
+(function(){ const b=document.getElementById('aggbtn'); if(b) b.onclick=window.aggiornaTutto; })();
 aggiornaSpiaBackup();
 (async()=>{
   try{
@@ -3874,14 +3932,21 @@ aggiornaSpiaBackup();
     window.MCP = MCP;   /* serve alla parte cantiere, che vive in un altro riquadro */
     aggiornaSpiaBackup();
     if(!MCP) return;
+    /* se il permesso c'e' gia' o lo si puo' rinnovare senza disturbare,
+       la posta si legge da sola all'apertura */
     const collegato = !window.MCPGOOGLE || MCPGOOGLE.collegato();
-    if(collegato){
+    const posso = collegato || (window.MCPGOOGLE && MCPGOOGLE.puoProvare && MCPGOOGLE.puoProvare());
+    if(posso){
       setTimeout(()=>{ if(statoBackup()!==oggiISO()) backupDrive(false); }, 6000);
       sincronizzaPosta();
     } else {
       spiaPosta('tocca qui per collegare Gmail');
     }
-    setInterval(sincronizzaPosta, 3600000);
+    setInterval(function(){ if(!document.hidden) forsePosta(true); }, 900000);
+    /* quando riapri l'app o torni su questa scheda, la posta si rilegge */
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden) forsePosta(false); });
+    window.addEventListener('focus', function(){ forsePosta(false); });
+    window.addEventListener('online', function(){ forsePosta(false); });
   }catch(e){}
 })();
 window.aggiornaSpiaDati = function(){
@@ -4367,6 +4432,13 @@ setView('home'); render();
   body[data-vista="can"] .app{padding:0 11px 96px;}
   body[data-vista="can"] .top{padding:9px 0 8px;gap:8px;}
   body[data-vista="can"] .brand small,body[data-vista="can"] .savedot,body[data-vista="can"] #bkbtn{display:none;}
+  /* sul telefono la riga del titolo va a capo, altrimenti Backup e Aggiorna
+     finiscono fuori dallo schermo e non li vedi */
+  .brand{flex-wrap:wrap;row-gap:7px;}
+  .bkbtn{padding:6px 12px;font-size:12px;margin-left:0;}
+  .brandaz{margin-left:auto;flex:none;}
+  .brand .bkbtn.agg{color:var(--accent);border-color:var(--accent);font-weight:700;}
+  body[data-vista="can"] .brandaz{display:none;}
   body[data-vista="can"] .brand{font-size:15.5px;}
   body[data-vista="can"] .q{display:none;}
   body[data-vista="can"] .views button{font-size:13px;padding:6px 12px;}
